@@ -25,6 +25,9 @@ project:
     - "!run_reports/"
     - "!accessibility/"
 
+  resources:
+    - assets/hero-web.webp
+    - assets/hero-web-800.webp
 website:
   title: "Resampling, Nonparametric & Robust Methods"
   site-url: https://matthewhester.com/nonparametrics/
