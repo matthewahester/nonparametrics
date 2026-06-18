@@ -1,0 +1,81 @@
+---
+title: "Notes"
+subtitle: "The weekly assumption-light methods spine"
+page-type: orientation
+toc: true
+---
+
+The notes are the backbone of the course. There is one note per week, and reading the current week's note before
+class — and again after — is the single most reliable way to keep up. Every note follows the same shape, so once
+you learn to read one, you can read them all.
+
+## How to read a week
+
+Each weekly note is built from the same parts, in the same order. Knowing the anatomy lets you skim for what you
+need and study with intent:
+
+- **The week question.** A single question that the week exists to answer. Hold it in mind as you read;
+  everything else is in service of it.
+- **Concept development.** The core ideas, built up in a few short sections from intuition toward a precise
+  statement about *what the method assumes and what it claims*. This is the part to read slowly — and where the
+  **assumption ladder** (what is assumed, what is resampled/ranked/downweighted, what is protected against, what
+  cannot be proven) is made explicit.
+- **Worked examples.** Each idea is worked on the recurring **Riverside Wellness** world — the wait-time
+  comparison, the paired before/after wellbeing scores, the satisfaction ratings, or the contaminated
+  engagement-vs-gain scatter — with the setup, the computation shown in R, and the result interpreted in
+  sentences — plus one *transfer* example in a fresh context, so you see the idea move.
+- **A common mistake.** The resampling/rank/robust error students most often make on this topic — permuting the
+  wrong thing, treating a bootstrap interval as assumption-free, reading a rank test as a mean difference,
+  deleting an outlier silently — named plainly so you can watch for it in your own work.
+- **Ungraded self-checks.** A few low-stakes practice prompts to test yourself. These are *self-check only* — no
+  points, no submission.
+- **Reading pointer.** Where to read more: the relevant *Introduction to Modern Statistics* topic (and, for the
+  workflow weeks, *ModernDive*; for the classical rank-based weeks, the optional *Nonparametric Statistical
+  Methods*), with the reminder that these notes are the course's own synthesis.
+- **Evidence and verification status.** An honest note that the numbers in the example datasets are drafted and
+  synthetic, pending review — this is a draft course site.
+- **Looking ahead.** A sentence or two connecting this week to the next, so the arc stays visible.
+
+Keep the [methods glossary](../resources/methods-glossary.qmd) and the
+[method chooser](../resources/method-chooser.qmd) open alongside the notes.
+
+## The four parts
+
+The fifteen weeks fall into four parts. Each part has a job, and the weeks within it build on one another.
+
+**Part I — Foundations of assumption-light reasoning.** Why weaker assumptions are useful, and the empirical
+objects the course is built on.
+
+1. [Week 1 — Why assumption-light methods?](week-01-why-assumption-light-methods.qmd)
+2. [Week 2 — Order statistics, ranks & empirical distributions](week-02-order-statistics-ranks-and-empirical-distributions.qmd)
+
+**Part II — Resampling inference.** Inference built from the data itself: shuffle to test, resample to estimate.
+
+1. [Week 3 — Permutation logic](week-03-permutation-logic.qmd)
+2. [Week 4 — Randomization tests](week-04-randomization-tests.qmd)
+3. [Week 5 — Bootstrap distributions](week-05-bootstrap-distributions.qmd)
+4. [Week 6 — Bootstrap confidence intervals](week-06-bootstrap-confidence-intervals.qmd)
+
+**Part III — Rank-based & ordinal methods.** Methods that use order, not the raw numbers.
+
+1. [Week 7 — Rank-based one-sample & paired methods (midterm)](week-07-rank-based-one-sample-and-paired-methods.qmd)
+2. [Week 8 — Two-sample rank methods](week-08-two-sample-rank-methods.qmd)
+3. [Week 9 — Categorical & ordinal outcomes](week-09-categorical-and-ordinal-outcomes.qmd)
+
+**Part IV — Robustness, comparison & synthesis.** Resistant summaries, robust regression, method comparison, a
+simulation study, and a closing synthesis.
+
+1. [Week 10 — Robust summaries & outliers](week-10-robust-summaries-and-outliers.qmd)
+2. [Week 11 — Robust regression ideas](week-11-robust-regression-ideas.qmd)
+3. [Week 12 — Comparing parametric & nonparametric conclusions](week-12-comparing-parametric-and-nonparametric-conclusions.qmd)
+4. [Week 13 — Simulation study of method behavior](week-13-simulation-study-of-method-behavior.qmd)
+5. [Week 14 — Applied robust-methods report workshop](week-14-applied-robust-methods-report-workshop.qmd)
+6. [Week 15 — Final review](week-15-final-review.qmd)
+
+## Public vs. graded
+
+These notes and the practice in them are **public and ungraded** — study material only. No graded prompts,
+answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, quizzes,
+homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and
+the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades.
+If this page and Blackboard ever disagree, follow Blackboard.

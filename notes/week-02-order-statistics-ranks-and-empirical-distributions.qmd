@@ -1,0 +1,387 @@
+---
+title: "Week 2 — Order statistics, ranks, and empirical distributions"
+subtitle: "How quantiles, ranks, and the ECDF summarize data without a model"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "IMS (Çetinkaya-Rundel & Hardin), quantiles and the empirical picture of data — supports order statistics and the ECDF"
+toc: true
+---
+
+## The week question
+
+Last week argued that under skew and a few very long waits, the mean can mislead while the median
+holds steady. That argument quietly assumed you already had a way to *summarize a sample without
+leaning on a distributional formula*. This week makes that machinery explicit. The question is
+narrow and load-bearing: **when you sort a sample and look only at its own internal order — the
+smallest value, the median, the quartiles, the rank of each point — what have you actually
+described, and what have you deliberately left out?**
+
+The answer is the foundation the whole course stands on. Three objects do all the work. The
+**order statistics** are the data sorted from smallest to largest. The **quantiles** (the median,
+the quartiles) are read off those sorted values. The **empirical cumulative distribution
+function**, or **ECDF**, is the sample's own distribution — the fraction of observations at or
+below each value. And the **rank** of a point is just its position in the sorted order. None of
+these needs a normal model, a mean, or a standard deviation. They are the engine behind both ranks
+and the bootstrap, which is why a course on assumption-light methods starts here.
+
+## Why this matters
+
+Almost every assumption-light method you will meet this semester is built from the objects on this
+page. A permutation test (week 3) shuffles labels and recomputes a statistic — and that statistic
+is often a difference in **medians** or a sum of **ranks**. The bootstrap (weeks 5–6) resamples
+*from the ECDF* — so the ECDF is literally the population the bootstrap samples from. The
+rank-sum and signed-rank tests (weeks 7–8) replace raw values with **ranks** and read a stochastic
+shift. If you do not have a clear, model-free picture of order statistics, quantiles, the ECDF, and
+ranks, every later method will feel like a bag of tricks. With that picture, they become variations
+on one idea: *describe the data by its own order, then ask what that order can support.*
+
+The deeper reason is the course's signature distinction between the **empirical** and the
+**theoretical**. A mean and a standard deviation summarize a sample *through the lens of a model*
+(they are the sufficient statistics of the normal). The median, the quartiles, and the ECDF
+summarize a sample *as it actually is* — no model required. When the model is in doubt, the
+empirical summaries are the ones you trust. But "no model" is not "no assumptions," and naming the
+trade is the discipline of this course. An order statistic tells you about *this* sample's order; it
+takes a further assumption — exchangeability, symmetry, an estimand definition — to say anything
+about a population or a cause. This week is where you learn exactly what the order alone earns you,
+and what it cannot.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Define the **order statistics** $x_{(1)} \le x_{(2)} \le \dots \le x_{(n)}$ of a sample, and read
+  the **median** and **quartiles** off them as resistant, model-free summaries.
+- Write down the **empirical distribution function** $\hat F_n(x) = \frac{1}{n}\sum_i \mathbf 1\{x_i
+  \le x\}$, evaluate it at a value, and read a quantile back off it.
+- Assign **ranks** $R_i$ to a sample, use **mid-ranks** for ties, and explain in words why a rank
+  carries *order* but not *magnitude*.
+- Compare two samples by overlaying their ECDFs, and read "one ECDF lies to the left of the other"
+  as "that group tends to be smaller" (a near-stochastic-dominance picture).
+- For each summary, state the assumption-ladder move: **what is assumed, what is being ranked or
+  ordered, what it protects against, and what it cannot prove.**
+
+## Core vocabulary
+
+- **Order statistics ($x_{(1)} \le \dots \le x_{(n)}$)** — the sample values sorted from smallest to
+  largest; $x_{(1)}$ is the minimum, $x_{(n)}$ the maximum, and $x_{(k)}$ the $k$-th smallest.
+- **Quantile / percentile** — a value below which a stated fraction of the data falls; the $0.5$
+  quantile is the **median** $\tilde x$, the $0.25$ and $0.75$ quantiles are the quartiles
+  **Q1** and **Q3**, and $\text{IQR} = \text{Q3} - \text{Q1}$ is the interquartile range.
+- **Median ($\tilde x$)** — the middle order statistic (or the average of the two middle ones); a
+  *resistant* center that a few extreme values cannot move far.
+- **Empirical cumulative distribution function (ECDF, $\hat F_n$)** — the data's own distribution:
+  $\hat F_n(x)$ is the fraction of observations at or below $x$. A right-continuous step function
+  that jumps by $1/n$ at each observation.
+- **Rank ($R_i$)** — the position of observation $i$ when the sample is sorted ascending; the
+  smallest value has rank $1$, the largest has rank $n$.
+- **Mid-rank (for ties)** — when values tie, each tied observation receives the *average* of the
+  ranks the tied group would have occupied, so the total rank sum is preserved.
+- **Stochastic dominance (picture)** — when one group's ECDF lies entirely to the *left* of
+  another's, every value is reached at a higher cumulative fraction, so that group tends to be
+  smaller across the whole range.
+
+## Concept development
+
+### Order statistics and quantiles: summarizing by sorting
+
+The first move of assumption-light statistics is the simplest one imaginable: **sort the data.**
+Given a sample $x_1, \dots, x_n$, relabel the values in increasing order and call them the **order
+statistics**
+
+$$
+x_{(1)} \le x_{(2)} \le \dots \le x_{(n)} .
+$$
+
+Here $x_{(1)}$ is the minimum, $x_{(n)}$ is the maximum, and $x_{(k)}$ is the $k$-th smallest value.
+Sorting throws away one thing on purpose — *which* unit produced each value — and keeps the thing
+that matters for a distribution-free summary: the *ordering* and the *spacing* of the values.
+
+From the order statistics you read off **quantiles**. The **median** $\tilde x$ is the middle order
+statistic (for odd $n$) or the average of the two middle ones (for even $n$). The **quartiles**
+Q1 and Q3 are the $0.25$ and $0.75$ quantiles — roughly the medians of the lower and upper halves.
+Because each of these is *an order statistic or an average of two*, no single extreme value can drag
+it far: that is the resistance that makes the median the trustworthy center under skew.
+
+**Locked numeric instance (Dataset W).** The Standard intake workflow ($n_C = 25$ waits, in
+minutes) has order statistics that climb gently and then jump at two long waits near $64$ and $88$
+minutes. Read off the locked quantiles: $\text{Q1} \approx 12$, **median $= 18$**,
+$\text{Q3} \approx 26$. The Express workflow ($n_T = 25$ waits) sits lower throughout:
+$\text{Q1} \approx 8$, **median $= 12$**, $\text{Q3} \approx 19$. Interpret: the Express median wait
+is $6$ minutes shorter than the Standard median ($12 - 18 = -6$), and the interquartile ranges
+($\text{IQR}_C \approx 14$ vs $\text{IQR}_T \approx 11$) say the Express middle half is both lower
+*and* a touch tighter.
+
+*Assumption-ladder move.* What is **assumed**: essentially nothing about shape — the quantiles are
+defined for any distribution. What is **ordered**: the raw waits are sorted, and a summary is read
+off the sorted positions. What it **protects against**: the two long Standard waits ($64$, $88$) cannot
+move the median, which the mean ($\approx 22$) cannot resist. What it **cannot prove**: that the
+*population* medians differ, or that Express *caused* the drop — those need a reference distribution
+(week 3) and a design argument (week 4). The median is a resistant description, not yet an inference.
+
+### The empirical distribution function: the data's own distribution
+
+Quantiles are points; the **ECDF** is the whole picture they come from. The empirical cumulative
+distribution function is defined directly from the sample,
+
+$$
+\hat F_n(x) = \frac{1}{n} \sum_{i=1}^{n} \mathbf 1\{x_i \le x\},
+$$
+
+where $\mathbf 1\{\cdot\}$ is $1$ when the condition holds and $0$ otherwise. In words:
+$\hat F_n(x)$ is **the fraction of observations at or below $x$.** It starts at $0$ far to the left,
+**steps up by $1/n$ at each observed value**, and reaches $1$ once you pass the maximum. It is a
+right-continuous staircase with $n$ steps (shorter steps where values tie, since several jumps stack
+at the same place). Crucially, $\hat F_n$ is the data's *own* distribution — no normal curve, no
+parameters, nothing assumed about shape. Reading a quantile is just inverting it: the median is the
+$x$ where the staircase first reaches $0.5$.
+
+The ECDF is the quiet hero of the course. Ranks are read off it (the rank of $x_i$ is essentially
+$n\,\hat F_n(x_i)$). The bootstrap (week 5) *samples from it*. A two-sample shift shows up as one
+ECDF sliding left of another. Learn to see it and most later methods become re-readings of one
+staircase.
+
+**Locked numeric instance (Dataset W).** For the Standard sample, $\hat F_n(18) \approx 0.5$ — the
+staircase reaches half height at the median $18$, exactly as it must. For the Express sample,
+$\hat F_n(12) \approx 0.5$. Now overlay the two: **the Express ECDF lies to the left of the
+Standard ECDF across most of the range.** At any wait value $x$, a larger fraction of Express waits
+have already fallen at or below $x$ than Standard waits have. For instance, by $x = 18$ minutes the
+Express staircase is already well above $0.5$ while the Standard one has only just reached $0.5$.
+
+*Assumption-ladder move.* What is **assumed**: nothing about the population shape — the ECDF is a
+fact about the sample. What is **ordered**: every observation contributes one $1/n$ step at its own
+value. What it **protects against**: being forced to pick a parametric family before you have looked;
+the ECDF lets the data describe itself. What it **cannot prove**: that the *population* ECDFs differ.
+The closeness of $\hat F_n$ to the true $F$ is itself uncertain (that gap is what later weeks
+quantify with permutation and bootstrap reasoning). "The Express ECDF lies left of Standard *in this
+sample*" is a description; whether it lies left *in the population* is an inference still to come.
+
+### Ranks and mid-ranks: keeping order, discarding magnitude
+
+A **rank** turns each value into its *position* in the sorted order. Pool or sort the sample, then
+assign rank $1$ to the smallest value, rank $2$ to the next, up to rank $n$ for the largest:
+
+$$
+R_i = \#\{\,j : x_j \le x_i\,\} \quad\text{(its position in ascending order).}
+$$
+
+Ranking performs a deliberate, lossy transformation. It **keeps the order** of the values and
+**discards their magnitudes**. The gap between rank $1$ and rank $2$ is always $1$, whether the
+underlying values differ by $0.3$ minutes or by $50$ minutes. That is the whole point: by collapsing
+magnitude to order, ranks make a method *resistant to extreme values and to the shape of the scale* —
+a long Standard wait of $88$ minutes contributes rank $50$ (out of $50$ pooled waits) whether it was
+$88$ or $880$. Ranks are the bridge from this week's descriptions to next month's rank tests.
+
+When values **tie**, you cannot give them different integer ranks without lying about the order. The
+fix is the **mid-rank**: every member of a tied group receives the *average* of the rank positions
+that group occupies. If three observations tie for what would have been ranks $7$, $8$, and $9$, each
+gets the mid-rank $(7 + 8 + 9)/3 = 8$. Mid-ranks keep the total rank sum unchanged (it is still
+$1 + 2 + \dots + n$), which is exactly what the rank-based tests need to behave correctly.
+
+**Locked numeric instance (Dataset W).** Pool all $50$ waits (Standard + Express) and rank them
+$1$ to $50$. The small Express waits collect the low ranks; the two long Standard waits ($\approx
+64, 88$) take the top ranks $49$ and $50$. Where waits tie — common at round-minute values like
+$12$ — assign **mid-ranks**: if four pooled waits all equal $12$ minutes and would have occupied
+positions $9$–$12$, each receives the mid-rank $(9 + 10 + 11 + 12)/4 = 10.5$. These pooled ranks
+$R_i$ are precisely what the two-sample rank-sum test (week 8) will sum by group.
+
+*Assumption-ladder move.* What is **assumed**: only that the values can be *ordered* (an ordinal
+scale suffices — you do not even need them to be numbers). What is **ranked**: raw values are replaced
+by positions, with mid-ranks resolving ties. What it **protects against**: outliers and a nonlinear
+or arbitrary scale — the $88$-minute wait is just "the largest," not a number that can blow up a sum
+of squares. What it **cannot prove**: anything about *how much* larger one group is, in raw units. A
+rank says Express tends to come *before* Standard; it never says "by $6$ minutes." Confusing those
+two readings is this week's classic error, below.
+
+## Worked examples
+
+### Worked example — Dataset W: quantiles, the ECDF, and pooled ranks (recurring slice)
+
+**What is assumed.** Only that wait times can be sorted and compared; no normal model, no equal
+variances, no symmetry. Data are synthetic; seed set (`set.seed(45203)`). We work with the two
+locked samples: Standard ($n_C = 25$) and Express ($n_T = 25$).
+
+**Computation.** The static R below sorts each sample, reads the quartiles and the median off the
+order statistics, evaluates the ECDF at the median, and forms the pooled ranks (with mid-ranks for
+ties). It is shown as teaching code and is **not executed** here.
+
+```r
+set.seed(45203)
+
+# Synthetic Riverside wait times (minutes), summarized to their locked quantiles
+# for this static slice. Right-skewed Standard arm with two long waits ~64, ~88.
+standard <- c(5, 7, 8, 9, 10, 12, 12, 13, 14, 15, 16, 17, 18,
+              18, 19, 20, 21, 23, 26, 26, 27, 28, 35, 64, 88)   # n_C = 25
+express  <- c(4, 5, 6, 7, 8, 8, 9, 10, 11, 11, 12, 12, 12,
+              13, 14, 15, 16, 17, 18, 19, 21, 24, 28, 33, 41)   # n_T = 25
+
+# --- Order statistics and quantiles (read off the sorted values) ---
+quantile(standard, c(.25, .5, .75))   # Q1 ~= 12   median = 18   Q3 ~= 26
+quantile(express,  c(.25, .5, .75))   # Q1 ~=  8   median = 12   Q3 ~= 19
+
+median(standard)                      # tilde x = 18  (resistant center)
+mean(standard)                        # ~= 22         (pulled up by 64, 88)
+
+# --- ECDF: the data's own distribution ---
+Fc <- ecdf(standard)
+Ft <- ecdf(express)
+Fc(18)                                # ~= 0.50  staircase reaches half height at the median
+Ft(12)                                # ~= 0.50
+Ft(18)                                # well above 0.50: Express ECDF lies LEFT of Standard
+
+# --- Pooled ranks with mid-ranks for ties ---
+pooled <- c(standard, express)        # 50 waits
+R <- rank(pooled, ties.method = "average")   # mid-ranks resolve ties (e.g. the many 12s)
+# the two long Standard waits (64, 88) take the top pooled ranks 49 and 50
+# tied pooled waits (e.g. the several 12s) share a mid-rank: averaging the
+# four positions 9-12 gives (9+10+11+12)/4 = 10.5 for a four-way tie
+
+# Q1c=12  med_c=18  Q3c=26   Q1t=8  med_t=12  Q3t=19   median diff = 12 - 18 = -6
+```
+
+**Interpretation.** The locked quantiles say the Express *middle* of the distribution sits about
+$6$ minutes lower than the Standard middle (median $12$ vs $18$), and the ECDF check confirms the
+staircases reach half-height exactly at those medians. Because the **Express ECDF lies to the left
+of the Standard ECDF** across most of the range, an Express wait tends to be shorter at essentially
+every point of the distribution — a near-stochastic-dominance picture, not just a lower average. The
+pooled ranks turn that same picture into positions: Express waits crowd the low ranks, the two long
+Standard waits ($64, 88$) take ranks $49$–$50$, and tied waits share mid-ranks so the rank sum stays
+$1 + 2 + \dots + 50 = 1275$. *Assumption ladder:* we **assumed** only orderability; we **ordered and
+ranked** the pooled waits; this **protects against** the two long waits that wreck the mean
+($\approx 22$ vs median $18$); it **cannot prove** that the *population* Express distribution is
+shifted, nor that Express *caused* the shorter waits — those readings wait for weeks 3 and 4.
+
+### Worked example — five quiz scores with a tie (transfer, new context)
+
+**What is assumed.** A new context, deliberately tiny so you can rank by hand: five students' scores
+on a $10$-point quiz, where two students tie. Only orderability is assumed; these illustrative
+numbers are distinct from Dataset W.
+
+**Computation.** Suppose the five raw scores are
+
+$$
+\{\,6,\ 9,\ 4,\ 9,\ 7\,\}.
+$$
+
+Sort them into order statistics: $x_{(1)} = 4,\ x_{(2)} = 6,\ x_{(3)} = 7,\ x_{(4)} = 9,\ x_{(5)} =
+9$. The median is the middle order statistic, $x_{(3)} = 7$. Now rank ascending. The $4$ gets rank
+$1$, the $6$ gets rank $2$, the $7$ gets rank $3$. The two $9$s would have occupied positions $4$ and
+$5$; because they **tie**, each receives the **mid-rank**
+
+$$
+\frac{4 + 5}{2} = 4.5 .
+$$
+
+So the ranks, in the original student order $\{6, 9, 4, 9, 7\}$, are $\{2,\ 4.5,\ 1,\ 4.5,\ 3\}$.
+Notice the rank sum is $2 + 4.5 + 1 + 4.5 + 3 = 15$, exactly $1 + 2 + 3 + 4 + 5$ — the mid-rank
+device preserved it.
+
+```r
+set.seed(45203)
+scores <- c(6, 9, 4, 9, 7)
+sort(scores)                       # order statistics: 4 6 7 9 9   (median = 7)
+rank(scores, ties.method = "average")  # 2.0 4.5 1.0 4.5 3.0
+sum(rank(scores))                  # 15 = 1+2+3+4+5  (mid-ranks preserve the total)
+```
+
+**Interpretation.** The two top scorers are *tied* — there is genuinely no order between them — so
+giving them both the mid-rank $4.5$ tells the truth: each is "between 4th and 5th." Giving one rank
+$4$ and the other rank $5$ would invent an ordering the data do not contain. *Assumption ladder:* we
+**assumed** only that scores can be ordered; we **ranked** them, splitting the tie with a mid-rank;
+this **protects against** pretending to know an order we do not have (and, as in Dataset W, against
+any single huge score dominating a magnitude-based summary); it **cannot prove** that the two
+tied students are equally able in any deeper sense — a rank records the observed order, nothing more.
+The *design move* is identical to Dataset W — sort, read quantiles, rank with mid-ranks — only the
+context and the size changed.
+
+## A common mistake
+
+This week's classic error is **confusing ranks with raw values** (Risk 6). A rank carries **order**,
+not **magnitude**, and reading magnitude into a rank quietly smuggles back the very assumption the
+rank was meant to drop.
+
+It sounds like: "The pooled rank of the $88$-minute wait is $50$ and the rank of an $18$-minute wait
+is about $25$, so the long wait is *twice* as long." It is not — $88$ is nearly *five times* $18$. The
+ranks $50$ and $25$ only say one wait is the largest and the other sits near the middle of the pooled
+order; the *spacing* between ranks is always $1$, no matter how far apart the raw minutes are. The
+same slip shows up the other way: "two ranks differ by only $2$, so the waits are almost equal" — but
+in a tight cluster a $2$-rank gap can be a fraction of a minute, and out in the tail it can be many
+minutes. **Equal rank gaps do not mean equal value gaps.**
+
+The tie version of the mistake is to **break ties arbitrarily** instead of using mid-ranks — handing
+the two tied $9$s ranks $4$ and $5$, say. That invents an order the data do not contain, and (worse
+for later weeks) it can shift the rank sums the two-sample and signed-rank tests depend on. Always
+average the tied positions.
+
+The clean discipline: a rank answers "*where does this value fall in the order?*" and nothing about
+"*by how much?*". When you need "by how much," go back to the raw values and a resistant summary like
+the median difference ($12 - 18 = -6$ minutes for Dataset W) — that is a *magnitude* claim, and it
+must come from values, never from ranks. Reading a rank-based result as if it were a difference in
+means is the same error wearing a lab coat; you will meet it again, named explicitly, in week 8.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence, explain why the Standard median ($18$) barely moves when the two long waits are
+   $64$ and $88$, while the mean ($\approx 22$) does. Which is an order statistic?
+2. Using the locked Express quantiles ($\text{Q1} \approx 8$, median $= 12$, $\text{Q3} \approx 19$),
+   state $\hat F_n(12)$ for the Express sample and explain what that number means in plain words.
+3. Rank the seven values $\{3, 5, 5, 5, 8, 9, 9\}$ using mid-ranks for ties, then check that your
+   ranks sum to $1 + 2 + \dots + 7 = 28$.
+4. A classmate says "the Express ECDF lies to the left of the Standard ECDF, so the Express mean wait
+   is exactly $6$ minutes lower." Name the *two* things wrong with that sentence.
+5. Two pooled waits have ranks $48$ and $50$; two others have ranks $24$ and $26$. Both pairs differ
+   by $2$ ranks. Explain why the *raw* gap might be very different for the two pairs, and what that
+   tells you about reading magnitude from ranks.
+
+## Reading and source pointer
+
+This week is grounded in the instructor notes (the primary course materials) for order statistics,
+quantiles, the empirical distribution, and ranks, with the **IMS** (Çetinkaya-Rundel & Hardin)
+treatment of **quantiles and the empirical picture of data** for the vocabulary and the
+empirical-distribution sequence that later anchors simulation-based inference. *These notes are the
+course's own synthesis, grounded in but not copied from the sources.* No prose, examples, exercises,
+figures, or solutions are reproduced from any source.
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value here
+is **drafted, synthetic, and not independently checked**. The load-bearing numbers are the locked
+Dataset W summaries — the Standard quartiles $\text{Q1} \approx 12$, **median $= 18$**, $\text{Q3}
+\approx 26$ and mean $\approx 22$ with two long waits near $64$ and $88$; the Express quartiles
+$\text{Q1} \approx 8$, **median $= 12$**, $\text{Q3} \approx 19$; the median difference $12 - 18 =
+-6$; the ECDF checks $\hat F_n(18) \approx 0.5$ (Standard) and $\hat F_n(12) \approx 0.5$ (Express);
+the claim that the Express ECDF lies to the left of the Standard ECDF; and the pooled ranks with the
+worked mid-rank $10.5$ — together with the illustrative five-score transfer ranks. All example data
+are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we stop *describing* the two samples and start *testing* the difference between them. We
+keep Dataset W and the same observed gap — the difference in medians $12 - 18 = -6$ minutes — but ask
+the inference question this week could not answer: *could a gap that large appear just from chance
+labeling?* The answer is the **permutation test**: pool the $50$ waits, **shuffle the $50$ group
+labels** under a null of exchangeability, recompute the median difference each time, and see where
+the observed $-6$ falls in that reshuffled distribution (locked result: permutation $p \approx
+0.02$). Everything that test shuffles and ranks is built from this week's order statistics and ECDF —
+the description becomes the engine of the inference.
+
+## See also
+
+- [Week 1 — Why assumption-light methods?](week-01-why-assumption-light-methods.qmd) — the mean-vs-median
+  fragility this week makes precise.
+- [Week 3 — Permutation logic](week-03-permutation-logic.qmd) — turning the observed median difference
+  into a test by shuffling labels.
+- [Week 8 — Two-sample rank methods](week-08-two-sample-rank-methods.qmd) — where the pooled ranks
+  built here become the rank-sum statistic.
+- [Methods glossary](../resources/methods-glossary.qmd) — ECDF, order statistics, quantiles, ranks,
+  and mid-ranks defined.
+- [Resampling guide](../resources/resampling-guide.qmd) — permutation vs bootstrap side by side, both
+  built on the ECDF.

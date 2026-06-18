@@ -1,0 +1,113 @@
+---
+title: "Resampling, Nonparametric & Robust Methods"
+subtitle: "What can we responsibly infer when the usual assumptions are in doubt?"
+toc: false
+---
+
+![](assets/hero.png){.course-hero-img fig-alt="Course identity hero for Resampling, Nonparametric and Robust Methods — a red-orange vanadinite crystal cluster surrounded by assumption-light graphics including a bootstrap percentile interval, permutation and randomization tests, rank-based methods, robust estimators with a breakdown-point chart, and a method-comparison simulation, with the course title."}
+
+> Real data are often skewed, heavy-tailed, ordinal, small-sample, or contaminated by outliers. This course
+> studies the statistical methods that stay useful when the normal model, equal variances, and large-sample
+> formulas are hard to justify — and it treats **resampling, ranks, robustness, and simulation as core ideas**,
+> not as a box of backup tests to reach for only after a normality test fails.
+
+## What this course is
+
+This is a course about **assumption-light statistical reasoning**. Many introductory and intermediate courses
+begin with familiar models — normal distributions, equal variances, the $t$-test, ANOVA, large-sample
+approximations. Those tools matter, but real data frequently break their assumptions. This course starts from a
+different question: *what can we responsibly infer from the data with weaker assumptions?*
+
+We build the reasoning and the tools in order: empirical distributions, order statistics, and ranks; the logic
+of **permutation** and **randomization** tests; **bootstrap** distributions and confidence intervals;
+**rank-based** one-sample, paired, and two-sample methods; **ordinal and categorical** outcomes; **robust**
+summaries, outliers, and influence; **robust regression** ideas; the honest **comparison** of parametric and
+nonparametric conclusions; and **simulation studies** that show how methods actually behave.
+
+The throughline is a single discipline we call the **assumption ladder**. For every method we ask four
+questions: *what does it assume, what does it resample or rank or downweight, what does it protect against, and
+what can it still not prove?* "Assumption-light" never means "assumption-free." A bootstrap interval is a
+procedure with assumptions, not model-free truth; a rank test still assumes something; a robust estimator trades
+efficiency for resistance. We name the trade every time.
+
+We use **R** and **Quarto** to shuffle labels, resample, rank, and fit robust models. But this is a
+*methods-and-reasoning* course, not a programming course and not a formula-only inference course: **the code is
+the means, the method's logic is the message.**
+
+## What you will be able to do
+
+By the end of the term, you should be able to:
+
+- Explain why assumption-light methods are useful, and distinguish parametric, nonparametric, resampling-based,
+  randomization-based, and robust approaches.
+- Use empirical distributions, ranks, order statistics, and quantiles to summarize data.
+- Explain and carry out **permutation** and **randomization** tests, and read what each does and does not assume.
+- Use the **bootstrap** to approximate sampling variability, construct bootstrap confidence intervals, and
+  explain when the bootstrap may fail.
+- Apply and interpret **rank-based** methods for one-sample, paired, and two-sample problems, and analyze
+  **ordinal** outcomes with methods that respect the measurement scale.
+- Compare means, medians, trimmed means, and other **robust** summaries; identify outliers and influential
+  points without treating every unusual value as an error.
+- Explain the idea of **robust regression** and why least squares is sensitive to unusual observations.
+- Use **simulation studies** to compare method behavior, and compare parametric and nonparametric conclusions
+  without automatically treating one as more "correct."
+
+## How the site is organized
+
+This public site has three working areas, reachable from the sidebar:
+
+- **Notes** — the weekly instructional spine. Each week poses a question, develops the method, works it on a
+  recurring dataset, names a common mistake, and offers ungraded self-checks. Start here.
+- **Labs** — the hands-on strand. Four short labs in R and Quarto let you build a randomization test, bootstrap
+  a median, fit a robust regression against least squares, and run a method-comparison simulation. Code is shown
+  for study; you run it in your own session.
+- **Resources** — a methods glossary, a **method chooser** that walks you from a data shape to a defensible
+  method, a resampling guide that lays permutation and the bootstrap side by side, and a robustness-and-outliers
+  guide. Keep these open while you read.
+
+## A recurring world
+
+To keep the ideas concrete, the course returns to one synthetic world — the **Riverside Wellness Program**, a
+campus effort to shorten service waits and improve student wellbeing — studied through four datasets of
+different shapes: a **skewed two-group comparison** (service wait times), a **paired before/after** set
+(wellbeing scores), an **ordinal** set (satisfaction ratings), and a **contaminated** scatter (engagement vs
+gain). Each shape is exactly where a particular assumption-light method earns its keep. All data are
+**synthetic, with the seed set**; the same world seen through four lenses makes the method choice visible.
+
+## Software
+
+We use **R** (via RStudio or Posit Cloud) together with **Quarto**. No prior coding experience is assumed — the
+work is scaffolded and the code is explained as it goes. On this draft course site, R chunks are **shown as static
+teaching code** and are not executed in place; you run them in your own session.
+
+## Source and attribution
+
+These notes are the course's own synthesis, **grounded in but not copied from** open and freely available
+sources:
+
+- **Primary materials:** instructor notes, examples, and method guides (the course's own work).
+- **Resampling & inference concepts:** *Introduction to Modern Statistics*, 2nd ed. (Çetinkaya-Rundel & Hardin) —
+  free at [openintro-ims.netlify.app](https://openintro-ims.netlify.app/). **License: CC BY-SA 3.0.**
+- **Resampling R workflow & reproducible reports:** *Statistical Inference via Data Science: A ModernDive into R
+  and the Tidyverse*, 2nd ed. (Ismay, Kim & Valdivia) — free at [moderndive.com/v2](https://moderndive.com/v2/).
+  **License: CC BY-NC-SA 4.0.**
+- **Optional advanced classical reference:** *Nonparametric Statistical Methods*, 3rd ed. (Hollander, Wolfe &
+  Chicken, Wiley) — a commercial text; **named and cited only.**
+
+All example data are **synthetic with the seed set**; the prose here is original.
+
+## A note on what is public here
+
+Everything on this site is **public and ungraded** — study material only. You will not find graded prompts,
+answer keys, rubrics, point values, or schedules here. The operational side of the course — graded method
+checkpoints, quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied
+robust-methods project, and the final exam, along with all dates and submissions — lives in **Blackboard (the
+LMS)**, which is authoritative. If this site and Blackboard ever disagree, follow Blackboard.
+
+::: {.callout-note}
+## Draft course site
+
+This is a **draft course site**, not a finished release. Some pages are drafts, every
+numeric value in the example datasets is **synthetic and provisional pending human review**, and no
+accessibility-compliance claim is made. Treat it as a work in progress rather than the final word.
+:::

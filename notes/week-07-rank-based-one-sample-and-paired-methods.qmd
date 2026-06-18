@@ -1,0 +1,375 @@
+---
+title: "Week 7 — Rank-based one-sample and paired methods"
+subtitle: "How the sign test and the signed-rank test trade assumptions for paired data (midterm week)"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "IMS (Çetinkaya-Rundel & Hardin), inference for paired data — supports paired comparison; Nonparametric Statistical Methods (Hollander, Wolfe & Chicken), classical sign / signed-rank — optional advanced reference (NAMED/CITED ONLY, no content)"
+toc: true
+---
+
+## The week question
+
+You measured the same fifteen people twice — a wellbeing score before the program and again
+after — and the after-scores are mostly higher. The obvious move is a paired $t$-test on the
+differences, but the differences are not normal: most are modest gains, a few are losses, one is a
+huge jump, and one person did not change at all. So the question this week is narrow and
+load-bearing: **when the paired differences are not normal, what can you responsibly claim about the
+typical change, and exactly what does each rank-based alternative assume to claim it?** Two methods
+answer that — the **sign test** and the **Wilcoxon signed-rank test** — and the whole point of the
+week is that they are *not* interchangeable. They sit at different rungs of the assumption ladder,
+and choosing between them is choosing what you are willing to assume.
+
+## Why this matters
+
+A paired design already did something valuable for you: by measuring each person twice, it cancels
+every stable between-person difference (baseline mood, personality, life circumstances) so that the
+single **difference** $d_i = \text{after}_i - \text{before}_i$ carries the within-person change and
+nothing else. That is why the entire week works on the $n$ differences, not on the $30$ raw scores —
+the pairing has already been spent to remove the nuisance variation.
+
+But cancelling the between-person variation does not make the differences normal. Real change scores
+are often skewed (a few people improve dramatically), bounded (you cannot improve past the ceiling),
+or contaminated by a single outlier. The paired $t$-test assumes the differences are roughly normal
+so that the mean difference and its standard error behave; when one $+30$ improvement drags the mean
+to $+6$ while the median sits at a resistant $+4$, the $t$-test is leaning on a center that one
+person moved. This is the course's recurring lesson in its paired form: the mean is fragile under
+skew and contamination, and ranks and signs give you summaries that are not.
+
+The deeper reason this matters is that "use a nonparametric test" is too vague to be a decision.
+There are at least three reasonable things you could do with these differences, and they form a
+ladder — **sign test ⊂ signed-rank ⊂ paired $t$** — where each rung assumes strictly more than the
+one below and, in exchange, can detect a smaller effect. Knowing the ladder is knowing the price of
+each claim. And because this is **midterm week** (the exam is Fri Oct 9, covering weeks 1–7 —
+empirical distributions, order statistics, ranks, permutation logic, randomization, bootstrap, and
+these early rank methods), the ladder is also a compact summary of the whole first third of the
+course: it is the same "what does this method assume, and what does it protect against?" discipline,
+applied to one paired dataset.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Reduce a paired design to its $n$ **differences** $d_i = \text{after}_i - \text{before}_i$, and
+  explain why the analysis happens on the differences rather than on the raw paired scores.
+- Run the **sign test** by hand-logic: drop zeros, count the positive signs, and compare that count
+  to a $\text{Binomial}(n^{*}, 0.5)$ null, and state the single assumption it makes.
+- Run the **Wilcoxon signed-rank test** by ranking the **magnitudes** $|d_i|$, summing the positive
+  ranks into $W^{+}$, and reading its two-sided $p$-value — and state the **symmetry** assumption it
+  adds.
+- Place the sign test, the signed-rank test, and the paired $t$-test on a single **assumption
+  ladder**, naming for each what it assumes, what it uses (signs, signed magnitudes, raw values),
+  what it protects against, and what it still cannot prove.
+- Diagnose the week's classic error — treating the sign test and the signed-rank test as the same
+  "nonparametric paired test" when they assume different things.
+
+## Core vocabulary
+
+- **Paired difference ($d_i$)** — for participant $i$, the within-person change
+  $d_i = \text{after}_i - \text{before}_i$; the pairing reduces two columns to one column of $n$
+  differences, on which all of this week's tests operate.
+- **Sign of a difference** — whether $d_i$ is positive, negative, or zero; the sign test uses *only*
+  this, discarding all magnitude information.
+- **Zero difference (a tie at $0$)** — a participant whose after equals their before; conventionally
+  **dropped**, reducing the effective sample size from $n$ to $n^{*}$.
+- **Sign test** — counts the positive differences among the $n^{*}$ nonzero ones and compares that
+  count to a $\text{Binomial}(n^{*}, 0.5)$ null; the null is "the population median difference is
+  $0$," i.e. a positive and a negative change are equally likely.
+- **Signed rank** — rank the absolute differences $|d_i|$ from smallest to largest, then re-attach
+  each $d_i$'s original sign to its rank; mid-ranks break ties in the magnitudes.
+- **Wilcoxon signed-rank statistic ($W^{+}$)** — the sum of the ranks attached to the *positive*
+  differences; large $W^{+}$ means the big-magnitude changes were mostly improvements.
+- **Symmetry assumption** — the signed-rank test assumes the distribution of differences is
+  symmetric about its median; this is the extra rung it stands on, stronger than the sign test's
+  assumption, weaker than normality.
+- **Assumption ladder (paired)** — **sign test ⊂ signed-rank ⊂ paired $t$**: each method assumes
+  strictly more than the one below it and, in return, can detect a smaller true effect.
+- **Resistant center** — the **median difference** ($+4$ here), unmoved by the single $+30$ outlier
+  that pulls the **mean difference** to $+6$.
+
+## Concept development
+
+### From a paired design to one column of differences
+
+The first move is structural, and the rest of the week depends on it. A paired design gives you two
+measurements per person, but you do not analyze them as two samples — you analyze their **difference**.
+For Dataset S (the Riverside Wellness Program wellbeing scores, $0$–$100$, synthetic; seed set), each
+of the $n = 15$ participants contributes one difference
+$$
+d_i = \text{after}_i - \text{before}_i .
+$$
+Working on the $d_i$ is what makes the pairing pay off: any stable, person-specific level — someone
+who is simply a cheerful baseline reporter, or a chronically low one — appears in *both* their before
+and their after, and subtracting cancels it exactly. What survives in $d_i$ is the change, which is
+the thing the program is supposed to move.
+
+For Dataset S the fifteen differences come out **median $+4$ points**, with **$11$ positive, $3$
+negative, and $1$ exactly zero**. The lone **zero** — a participant who scored identically before and
+after — is a tie at $0$, and the convention is to **drop it**, because it offers no evidence either
+way about the *direction* of change. Dropping the zero leaves $n^{*} = 14$ nonzero differences. The
+**mean difference is $+6$**, but that mean is inflated by a single **$+30$** improvement; the
+**median $+4$** is the resistant summary that one outlier cannot drag. Hold onto that gap between
+$+6$ and $+4$ — it is exactly the contrast the next two tests handle differently.
+
+### The sign test: count the signs, assume the least
+
+The sign test asks the most modest possible question: **are improvements more common than declines?**
+It throws away every magnitude and keeps only the **sign** of each nonzero difference. Under the null
+hypothesis that the population **median difference is $0$**, a randomly chosen person is equally
+likely to improve as to decline, so the number of positive signs behaves like a coin-flip count:
+$$
+\#\{d_i > 0\} \sim \text{Binomial}(n^{*}, 0.5) .
+$$
+For Dataset S, $11$ of the $n^{*} = 14$ nonzero differences are positive. You compare $11$ to a
+$\text{Binomial}(14, 0.5)$ reference and ask how surprising $11$-or-more (and, two-sided, the matching
+low tail) would be if positives and negatives were truly equally likely. The **two-sided $p$-value is
+about $0.057$** — **borderline**, just outside the conventional $0.05$ line. In words: if the program
+had no directional effect, you would see a split this lopsided (or more) roughly $6\%$ of the time, so
+the sign test alone gives you only weak, suggestive evidence of improvement.
+
+Name the ladder move. **What is assumed:** essentially nothing about the *shape* of the differences —
+only that, under the null, a positive change and a negative change are equally likely (the median
+difference is $0$). **What is used:** the **signs**, and nothing else. **What it protects against:**
+outliers and skew entirely — the $+30$ improvement counts as exactly one "$+$", identical to a $+1$
+improvement, so no single observation can distort the result. **What it cannot prove:** much of
+anything about *how big* the change is, and it pays for its safety with low power — discarding the
+magnitudes is throwing away real information, which is why $11/14$ lands only at $p \approx 0.057$.
+
+### The Wilcoxon signed-rank test: use the magnitudes, assume symmetry
+
+The signed-rank test recovers some of that discarded information without going all the way to
+assuming normality. The recipe: take the absolute differences $|d_i|$, **rank them** from smallest
+($1$) to largest ($n^{*}$) — using **mid-ranks** for any ties in magnitude — then re-attach each
+difference's original **sign** to its rank, and sum the ranks belonging to the **positive**
+differences into
+$$
+W^{+} = \sum_{i:\, d_i > 0} R_i , \qquad R_i = \operatorname{rank}(|d_i|) .
+$$
+Large $W^{+}$ means the *big* changes were mostly *improvements*; small $W^{+}$ means the big changes
+were mostly declines. For Dataset S, because $11$ of $14$ differences are positive **and** the largest
+magnitudes (including the $+30$) are improvements, the positive ranks dominate, $W^{+}$ is **large**,
+and the **two-sided $p$-value is about $0.02$**.
+
+That $p \approx 0.02$ is **sharper** than the sign test's $p \approx 0.057$ on the *same data*, and
+the reason is the whole point of the rung: the signed-rank test used the magnitudes, so it noticed
+that the improvements were not just more numerous but also larger. Name the ladder move. **What is
+assumed:** that the distribution of differences is **symmetric** about its median — a real,
+nontrivial assumption that the sign test never made. **What is used:** the **signed magnitudes** (sign
+*and* rank), not the raw values, so it is still resistant to how *extreme* an outlier is — the $+30$
+contributes only the top rank ($14$), not its raw value of $30$. **What it protects against:** heavy
+tails and gross outliers (it ranks, so a $+30$ and a $+300$ would give the same top rank) while
+recovering the power the sign test gave away. **What it cannot prove:** that the differences are
+symmetric — it *assumes* that. If the differences are badly skewed (which a single one-sided outlier
+hints at), the symmetry assumption is questionable, and then the more honest tool may be the
+assumption-lighter sign test, even at the cost of power.
+
+### One ladder, three rungs: sign ⊂ signed-rank ⊂ paired $t$
+
+Lay the three paired methods side by side and the structure of the whole week appears as a single
+ladder, each rung assuming strictly more than the one beneath it:
+
+$$
+\underbrace{\text{sign test}}_{\text{signs only}}
+\;\subset\;
+\underbrace{\text{Wilcoxon signed-rank}}_{\text{signed magnitudes; symmetric}}
+\;\subset\;
+\underbrace{\text{paired } t\text{-test}}_{\text{differences} \approx \text{normal}} .
+$$
+
+Read it from the bottom up. The **sign test** assumes almost nothing — just that positives and
+negatives are equally likely under the null — and in exchange has the least power; on Dataset S it
+returns the borderline $p \approx 0.057$. The **signed-rank test** adds the assumption that the
+differences are **symmetric** about their median; in exchange it uses the magnitudes and gains power,
+sharpening to $p \approx 0.02$. The **paired $t$-test** would add the still-stronger assumption that
+the differences are roughly **normal** and would test the **mean** difference — but here the mean is
+$+6$, dragged up by the single $+30$, so the $t$-test is testing a center one person moved, on an
+assumption the visibly skewed differences do not support.
+
+The ladder is not a ranking from worst to best; it is a menu of trades. Climbing a rung buys power but
+spends an assumption, and the right rung is the highest one whose assumption you can actually defend
+for *these* differences. Because Dataset S looks one-sided and outlier-bearing, the defensible choice
+is the signed-rank test if you are willing to call the differences symmetric, and the sign test if you
+are not — and the honest report names which assumption it leaned on. That is the assumption-light
+discipline in one picture, and it is exactly the kind of reasoning the midterm asks you to perform.
+
+## Worked examples
+
+### Worked example — Dataset S, the paired wellbeing scores (recurring slice)
+
+**What is assumed.** Dataset S is the Riverside Wellness Program's paired before/after wellbeing
+scores ($0$–$100$) for $n = 15$ participants (synthetic; seed set). We analyze the $15$ within-person
+**differences** $d_i = \text{after}_i - \text{before}_i$. The sign test assumes only that, under the
+null, a positive and a negative change are equally likely (population median difference $0$); the
+signed-rank test additionally assumes the differences are **symmetric** about their median.
+
+**Computation.** The static R below reduces the pairs to differences, runs the sign-test count, and
+forms the signed-rank statistic. It is shown as teaching code and is **not executed** here.
+
+```r
+set.seed(45203)
+
+# Dataset S: 15 paired before/after wellbeing scores (synthetic, seed set).
+# Differences d = after - before are LOCKED to the program's shape:
+#   median +4 ; 11 positive, 3 negative, 1 zero ; mean +6 (one +30 outlier).
+d <- c(2, 4, 12, -3, 0, 8, 5, 30, 3, -1, 7, 1, 9, -2, 15)   # after - before
+
+median(d)                 # +4  (resistant center)
+mean(d)                   # +6  (pulled up by the single +30 outlier)
+
+# --- Sign test: SIGNS ONLY ---------------------------------------------
+nz   <- d[d != 0]         # drop the 1 zero  -> n* = 14 nonzero differences
+npos <- sum(nz > 0)       # 11 positive
+nneg <- sum(nz < 0)       #  3 negative
+# Compare 11 positives to Binomial(14, 0.5):
+binom.test(npos, length(nz), p = 0.5)$p.value   # two-sided p ~= 0.057 (borderline)
+
+# --- Wilcoxon signed-rank: SIGNED MAGNITUDES, assumes symmetry ----------
+R     <- rank(abs(nz))    # rank the |d|; mid-ranks for ties
+Wplus <- sum(R[nz > 0])   # sum of POSITIVE ranks -> W+ is large
+wilcox.test(nz)$p.value   # two-sided p ~= 0.02 (sharper than the sign test)
+
+# median(d)=+4  mean(d)=+6   sign: 11/14 -> p=0.057   signed-rank: W+ large -> p=0.02
+```
+
+**Interpretation.** The sign test sees $11$ improvements among $14$ nonzero changes and returns a
+**borderline** $p \approx 0.057$: improvements are more common than declines, but only weakly so once
+you keep nothing but the signs. The signed-rank test, by also using the **magnitudes**, notices that
+the improvements were the *larger* changes (the top ranks are positive, including the $+30$), so
+$W^{+}$ is large and $p$ sharpens to $\approx 0.02$. Name the ladder move: the sign test assumed the
+least and protected fully against the $+30$ outlier (it counted as one "$+$") but paid in power; the
+signed-rank test bought that power back by assuming the differences are **symmetric**, while still
+ranking the $+30$ rather than using its raw value. Neither test proves the program "works" — both
+describe how surprising this much improvement would be under no directional effect — and the
+signed-rank's sharper $p$ is only trustworthy if you are willing to call these one-sided, outlier-
+bearing differences symmetric. The resistant **median $+4$** (not the outlier-inflated mean $+6$)
+remains the honest one-number summary of the typical change.
+
+### Worked example — a paired taste-test preference (transfer, new context)
+
+**What is assumed.** A campus dining team runs a **paired taste test**: each of $20$ tasters samples
+**Recipe A** and **Recipe B** in random order and rates each on a $1$–$10$ scale. For taster $i$ the
+difference is $d_i = \text{score}_B - \text{score}_A$. These numbers are illustrative and distinct
+from Dataset S. Because the team is unsure whether the differences are symmetric — a few tasters may
+*love* B while most are mildly indifferent — they lead with the **sign test**, which makes no
+symmetry assumption, and treat the signed-rank test as a secondary, stronger-assumption check.
+
+**Computation.** Suppose $13$ tasters prefer B ($d_i > 0$), $5$ prefer A ($d_i < 0$), and $2$ score
+the recipes identically ($d_i = 0$). Drop the $2$ zeros, leaving $n^{*} = 18$ nonzero differences.
+The sign test compares the $13$ positives to a $\text{Binomial}(18, 0.5)$ null:
+
+```r
+set.seed(45203)
+# Paired taste test (illustrative, distinct from Dataset S).
+# 13 prefer B, 5 prefer A, 2 ties -> drop ties, n* = 18.
+binom.test(13, 18, p = 0.5)$p.value   # two-sided p for the sign test
+# If willing to assume symmetric differences, the signed-rank test on the d_i
+# would add magnitude information and typically return a smaller p.
+```
+
+A $13$–$5$ split out of $18$ is a clear lean toward B; the sign test reports how surprising that lean
+would be if tasters were equally likely to prefer either recipe.
+
+**Interpretation.** The *design move* is identical to Dataset S — reduce paired ratings to within-
+person differences, drop the ties, count the signs — only the context and the numbers differ. The
+team led with the **sign test precisely because it would not commit to symmetry**: if a handful of
+tasters strongly prefer B while most are nearly indifferent, the differences are skewed, and the
+signed-rank test's symmetry assumption would be shaky. Naming the ladder: the sign test here protects
+against that uncertain shape at the cost of power, and the team only climbs to the signed-rank rung if
+a look at the differences makes symmetry defensible. The transferable lesson is that the choice
+between the two tests is a choice about *which assumption you can defend for the data in front of you*
+— not a default that "the Wilcoxon is the better nonparametric test."
+
+## A common mistake
+
+The week's classic error (Risk 13) is **conflating the sign and signed-rank assumptions** — treating
+them as one interchangeable "nonparametric paired test." It sounds like: "the differences aren't
+normal, so I'll run the Wilcoxon signed-rank — it's assumption-free." Two things are wrong with that.
+
+First, the signed-rank test is **not** assumption-free. It assumes the differences are **symmetric**
+about their median. That is genuinely weaker than the $t$-test's normality assumption, but it is far
+from nothing, and it is *exactly* the assumption that a one-sided outlier like Dataset S's $+30$ calls
+into question. "Assumption-light" is never "assumption-free"; the signed-rank test trades the
+normality assumption for a symmetry assumption, and you owe the reader an honest look at whether that
+symmetry holds. The **sign test**, by contrast, uses **signs only** and makes **no** shape assumption
+beyond "positives and negatives are equally likely under the null" — which is why it, not the
+signed-rank test, is the genuinely assumption-lighter rung.
+
+Second, the two tests answer subtly different questions and can disagree, and that disagreement is
+*informative*, not a nuisance. On Dataset S the sign test lands at a borderline $p \approx 0.057$
+while the signed-rank test sharpens to $p \approx 0.02$ — and the gap is the magnitude information at
+work. If you report only the signed-rank $p$ and call it "the nonparametric result," you hide both the
+extra assumption you made (symmetry) and the fact that the assumption-lighter test was only borderline.
+The honest report names the rung: *which* test, *what* it assumed, and *what* the assumption-lighter
+test said. Reaching reflexively for the signed-rank test "because it's more powerful" inverts the
+discipline — you should climb to a more powerful rung only when its assumption is defensible, not the
+other way around.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence each, state what the **sign test** assumes and what the **Wilcoxon signed-rank
+   test** assumes, and name the single difference between the two.
+2. On Dataset S, explain *why* the sign test's $p \approx 0.057$ is larger than the signed-rank's
+   $p \approx 0.02$ on the very same differences. Which piece of information does the sign test
+   discard?
+3. The mean difference on Dataset S is $+6$ and the median is $+4$. Say which one the $+30$ outlier
+   moved, which test (sign / signed-rank / paired $t$) each summary belongs to, and which summary you
+   would report as "the typical change."
+4. A classmate runs the signed-rank test and writes "this test makes no assumptions." Identify the
+   assumption they missed and describe a difference-distribution shape that would make that assumption
+   unsafe.
+5. Why is the **zero** difference in Dataset S dropped before the sign test, and how does dropping it
+   change the binomial reference distribution (from $\text{Binomial}(15, 0.5)$ to what)?
+6. Place the paired $t$-test, the sign test, and the signed-rank test in order from fewest assumptions
+   to most, and for each name one thing it protects against and one thing it cannot prove.
+
+## Reading and source pointer
+
+This week is grounded in the **instructor notes** (the primary course materials) for the sign test,
+the Wilcoxon signed-rank test, and the paired assumption ladder. For the **paired-data inference**
+framing — reducing a paired design to its differences and reasoning about the typical change — see the
+**IMS** (Çetinkaya-Rundel & Hardin) treatment of **inference for paired data**. For the classical
+vocabulary and level of the **sign** and **signed-rank** procedures, *Nonparametric Statistical
+Methods* (Hollander, Wolfe & Chicken) is named here as an **optional advanced reference only** — it is
+cited for its standing as the standard classical text, and **no content, prose, tables, examples, or
+notation are reproduced from it**. *These notes are the course's own synthesis, grounded in but not
+copied from the sources.*
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value here is
+**drafted, synthetic, and not independently checked**. The load-bearing numbers are the Dataset S
+slice — **median difference $+4$**, **mean difference $+6$** (one $+30$ outlier), the **$11$ positive
+/ $3$ negative / $1$ zero** split, the **$n^{*} = 14$** nonzero differences, the **sign-test count
+$11/14$** against $\text{Binomial}(14, 0.5)$ giving **two-sided $p \approx 0.057$**, and the
+**Wilcoxon signed-rank** result (large $W^{+}$, **$p \approx 0.02$**) — together with the illustrative
+$13$–$5$–$2$ taste-test transfer numbers. All example data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we keep ranks but unpair the data: with two **independent** groups instead of one paired
+sample, the natural tool is the **Wilcoxon rank-sum / Mann–Whitney** test. We return to Dataset W (the
+Express vs Standard service wait times), pool and rank all the waits, and read the result as a
+**stochastic shift** — a probability of superiority $\hat P(\text{Express} < \text{Standard})
+\approx 0.72$, $p \approx 0.01$ — rather than a difference in means. The through-line continues: the
+same "rank, don't trust the raw scale" discipline, now for unpaired comparisons, and the same habit of
+naming exactly what the rank test does and does not assume. (Reminder: the **midterm is Fri Oct 9** and
+covers weeks 1–7 — empirical distributions through these early rank methods.)
+
+## See also
+
+- [Week 6 — Bootstrap confidence intervals](week-06-bootstrap-confidence-intervals.qmd) — the
+  resampling rung just below this week's ranks.
+- [Week 8 — Two-sample rank methods](week-08-two-sample-rank-methods.qmd) — the same rank idea for two
+  independent groups.
+- [Methods glossary](../resources/methods-glossary.qmd) — sign test, Wilcoxon signed-rank, $W^{+}$,
+  the symmetry assumption, the assumption ladder.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide: which rung
+  for which data shape.

@@ -1,0 +1,310 @@
+---
+title: "Lab 11 — Robust regression vs least squares"
+subtitle: "Watching two contaminating points flatten the least-squares line while a robust fit holds"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+toc: true
+---
+
+> **Purpose.** This lab is the hands-on companion to
+> [Week 11 — Robust regression ideas](../notes/week-11-robust-regression-ideas.qmd). The note argues
+> that ordinary least squares minimizes *squared* residuals, so a single contaminated point can bend
+> the whole line toward itself, while robust fits **downweight** that point instead of letting it
+> dominate. Here you *build* the contamination and watch it happen. You will construct Dataset D — a
+> clean linear relationship between sessions attended and wellbeing gain for $n = 40$ participants —
+> plant the two contaminating points the course locks (a high-leverage entry-error point and a
+> vertical outlier), fit ordinary least squares and three robust slopes on the *same* contaminated
+> data, and read off the contrast: OLS slope $\approx 0.6$ against Theil–Sen $\approx 1.45$, Huber
+> $\approx 1.4$, and L1 $\approx 1.5$, with the clean structure at $\approx 1.5$. The code is shown
+> for study and is not executed on this site; you run it in your own R session.
+
+## The idea
+
+A regression line is a summary — the conditional center of $y$ as $x$ moves — and like every summary
+in this course it can be *resistant* or it can be *fragile*. Ordinary least squares builds the line by
+choosing the slope $\hat\beta_1$ and intercept $\hat\beta_0$ that minimize the sum of **squared**
+residuals,
+
+$$
+(\hat\beta_0, \hat\beta_1) = \arg\min_{\beta_0,\beta_1} \sum_{i=1}^{n} \big(y_i - \beta_0 - \beta_1 x_i\big)^2 .
+$$
+
+The square is the whole story. A residual of $20$ does not count twice as much as a residual of $10$;
+it counts **four times** as much. So a single point far from the structure the other thirty-nine
+follow can outvote the entire rest of the sample, and the reported line becomes a compromise between
+the real structure and the contamination — flat where the truth is steep, or steep where the truth is
+flat.
+
+Dataset D is built to make that visible. The clean relationship is
+$\text{gain} \approx 2 + 1.5\cdot\text{sessions}$ with residual SD $\approx 4$ — a clear positive
+slope of about $1.5$ points of gain per session attended. Then two points are planted, each a
+different *kind* of bad point:
+
+- a **high-leverage** point — a data-entry-style error at $\text{sessions} = 20$ (the far right edge
+  of the $x$ range) with $\text{gain} = 2$ (a "bad $y$" sitting where the clean line would predict
+  about $32$). Because it is at the extreme of $x$, it has enormous *leverage*: the line pivots toward
+  it. This is the point that **flattens** the OLS slope from $1.5$ down to about $0.6$.
+- a **vertical outlier** — a point at $\text{sessions} = 5$ with $\text{gain} = 40$ (sitting where the
+  clean line would predict about $9.5$). It is an unusual $y$ at an *ordinary* $x$. It inflates the
+  residual scale and nudges the intercept, but because its $x$ is near the middle it moves the *slope*
+  far less than the leverage point does.
+
+The robust fits answer the same minimization question with a different penalty. **Least absolute
+deviations (L1)** minimizes $\sum|r_i|$ instead of $\sum r_i^2$ — the same reason a median resists a
+wild value, applied to a line. **Theil–Sen** takes the *median* of all pairwise slopes, so a handful
+of contaminated pairs cannot move a median of thousands of slopes. **Huber M-estimation** caps the
+influence of large residuals: small residuals are squared as usual, but beyond a threshold the penalty
+grows only *linearly*, so an extreme point's pull is bounded. Three different mechanisms, one shared
+logic — let an extreme point speak, but do not let it shout. Watching all four fits on the same
+contaminated data is the lab.
+
+## Goal
+
+By the end of this lab you should be able to:
+
+- Construct Dataset D in R with a fixed seed: the clean line
+  $\text{gain} \approx 2 + 1.5\cdot\text{sessions}$ for $n = 40$, then plant the **high-leverage**
+  point $(\text{sessions}=20,\ \text{gain}=2)$ and the **vertical outlier**
+  $(\text{sessions}=5,\ \text{gain}=40)$.
+- Fit ordinary least squares with `lm()` and read the contaminated slope $\approx 0.6$ against the
+  clean-data slope $\approx 1.5$, naming *which* planted point flattens the line.
+- Fit three robust slopes — Theil–Sen $\approx 1.45$, Huber M $\approx 1.4$ via `MASS::rlm`, and
+  L1/LAD $\approx 1.5$ — and read each one back to the clean structure.
+- State, for each estimator, the assumption-ladder move: **what is assumed, what is
+  ranked/downweighted, what it protects against, and what it cannot prove.**
+
+The point of the lab is the **resistance demonstration**: least squares lets one far point dominate,
+and the robust fits recover the clean slope by ranking or downweighting that point rather than deleting
+it. The code is the means, not the message — the discipline is "investigate, do not auto-delete."
+
+## Setup
+
+You need base R for `lm()` and the data, the **MASS** package for the Huber M-estimator (`rlm`) and
+the Theil–Sen-style resistant fit (`lqs`), and **quantreg** for the L1/LAD fit (`rq`). Every chunk that
+draws randomness starts with `set.seed(45203)`, the course-wide seed, so your run reproduces the locked
+Dataset D numbers. The data are **synthetic; seed set** — these are not real participant records.
+
+Fix the data facts before any code runs, because every slope below is read against them:
+
+- **Unit and variables:** one row per **participant** ($n = 40$); the predictor $x$ is
+  **sessions attended** ($0$–$20$); the outcome $y$ is **wellbeing gain** in points.
+- **Clean structure:** $\text{gain} \approx 2 + 1.5\cdot\text{sessions}$, residual SD $\approx 4$. The
+  clean slope — the structure you are trying to recover — is $\beta_1 \approx 1.5$.
+- **The two contaminating points (locked):** a **high-leverage** point at
+  $(\text{sessions}=20,\ \text{gain}=2)$ and a **vertical outlier** at
+  $(\text{sessions}=5,\ \text{gain}=40)$. They are *added* to the 40 clean points (the analysis below
+  treats the full contaminated sample; do not silently drop them).
+- **The locked slopes this lab reads from:** clean OLS $\approx 1.5$; **contaminated OLS
+  $\approx 0.6$**; **Theil–Sen $\approx 1.45$**; **Huber M $\approx 1.4$**; **L1/LAD $\approx 1.5$**.
+
+```r
+set.seed(45203)
+
+# --- Dataset D: engagement vs wellbeing gain, with contamination -------------
+# Unit = participant. x = sessions attended (0-20); y = wellbeing gain (points).
+# Synthetic data; the clean line and the two bad points are the LOCKED Week 11 slice.
+n <- 40
+
+sessions <- runif(n, min = 0, max = 20)            # 40 participants across the x-range
+gain     <- 2 + 1.5 * sessions + rnorm(n, sd = 4)   # clean line: intercept 2, slope 1.5
+
+# The two contaminating points the course locks (added to the 40 clean rows):
+sessions_c <- c(sessions, 20, 5)                   # high-leverage x = 20; outlier x = 5
+gain_c     <- c(gain,      2, 40)                   # bad y = 2 (leverage); big y = 40 (vertical)
+
+c(n_clean = n, n_total = length(gain_c),
+  lev_pt = "(20, 2)", out_pt = "(5, 40)")          # the locked contamination
+```
+
+You now hold two versions of the data: the 40 clean rows (`sessions`, `gain`) and the same 40 rows
+*plus* the two planted points (`sessions_c`, `gain_c`). Every comparison below is the *same line fit*
+on the contaminated version — the only thing that changes is the estimator. Keeping the clean version
+around lets you confirm that the structure you are trying to recover really is a slope of about $1.5$.
+
+## Steps
+
+You will fit four lines in three moves: establish the clean and contaminated least-squares slopes so
+the damage is visible (Step 1), fit the three robust slopes on the same contaminated data (Step 2),
+then put all four side by side and read which point moved which fit (Step 3).
+
+### Step 1 — Fit least squares, clean then contaminated
+
+Start with the estimator that breaks. Fit `lm()` on the clean 40 rows to confirm the structure is a
+slope of about $1.5$, then fit `lm()` on the contaminated data and watch the slope collapse.
+
+```r
+set.seed(45203)
+
+# Clean fit: 40 rows, no contamination -> recovers the structure.
+fit_clean <- lm(gain ~ sessions)
+coef(fit_clean)[["sessions"]]                      # -> ~ 1.5   (the clean slope = the truth)
+
+# Contaminated fit: the same line, now with the two planted points.
+fit_ols <- lm(gain_c ~ sessions_c)
+coef(fit_ols)[["sessions_c"]]                      # -> ~ 0.6   (flattened by the leverage point)
+```
+
+The clean slope comes back at about $1.5$ — the structure you planted, $\text{gain} \approx 2 + 1.5\cdot\text{sessions}$, is recovered when the data are uncontaminated. The contaminated slope collapses
+to about $0.6$. That is the failure the week is about: two points out of forty-two have **flattened**
+the line by more than half. **Assumption-ladder move:** OLS *assumes* the residuals are roughly equal
+in scale and that no point is wildly far from the rest; it *downweights nothing* — every point enters
+with full squared weight; it *protects against* nothing in the way of contamination; it *cannot prove*
+its slope is the structure, because here the slope $0.6$ is a compromise with the bad $y = 2$ at the
+far-right $x = 20$, not the truth. The high-leverage point did most of this: sitting at the edge of
+$x$, it has the most pull on the slope, and its low $y$ pulls the right end of the line down.
+
+### Step 2 — Fit three robust slopes on the same contaminated data
+
+Now fit the same line three more times on the *same contaminated* `sessions_c`/`gain_c`, changing only
+the estimator. Each robust method recovers the clean structure by ranking or downweighting the planted
+points rather than by deleting them.
+
+```r
+set.seed(45203)
+library(MASS)        # rlm (Huber M-estimation), lqs (resistant Theil-Sen-style fit)
+library(quantreg)    # rq  (least absolute deviations / L1 regression)
+
+# Theil-Sen idea: the slope is the MEDIAN of all pairwise slopes (rank, not magnitude).
+# lqs() gives a high-breakdown resistant fit in the Theil-Sen spirit.
+fit_ts  <- lqs(gain_c ~ sessions_c)
+coef(fit_ts)[["sessions_c"]]                       # -> ~ 1.45  (median of pairwise slopes)
+
+# Huber M-estimation: square small residuals, but cap the influence of large ones.
+fit_hub <- rlm(gain_c ~ sessions_c, psi = psi.huber)
+coef(fit_hub)[["sessions_c"]]                       # -> ~ 1.4   (large residuals downweighted)
+
+# L1 / LAD: minimize sum |r_i| instead of sum r_i^2 (the median's logic, for a line).
+fit_l1  <- rq(gain_c ~ sessions_c, tau = 0.5)
+coef(fit_l1)[["sessions_c"]]                        # -> ~ 1.5   (least absolute deviations)
+```
+
+All three robust slopes land back near the clean structure: **Theil–Sen $\approx 1.45$**, **Huber M
+$\approx 1.4$**, **L1/LAD $\approx 1.5$** — versus the OLS $\approx 0.6$ on the identical data. Each
+gets there by a different route, and the assumption-ladder trade differs for each:
+
+- **Theil–Sen ($\approx 1.45$):** *assumes* a roughly linear relationship; it *ranks* — it takes the
+  **median** of all pairwise slopes, so it cares about the *ordering* of slopes, not their magnitudes;
+  it *protects against* a small fraction of contaminated points (a high breakdown point — the planted
+  pairs are a minority of the thousands of pairwise slopes); it *cannot prove* the line is right if the
+  contamination is more than a minority, and it gives up some efficiency on perfectly clean data.
+- **Huber M ($\approx 1.4$):** *assumes* most residuals follow a well-behaved scale; it *downweights* —
+  residuals beyond a threshold contribute only linearly, so the vertical outlier's pull is bounded; it
+  *protects against* moderate vertical outliers; it *cannot prove* resistance to a **high-leverage**
+  point, because Huber downweights large *residuals* and a leverage point can have a small residual
+  while still dominating — a known limitation worth stating out loud.
+- **L1/LAD ($\approx 1.5$):** *assumes* linearity and models the conditional **median** of $y$; it
+  *minimizes* $\sum|r_i|$, the same logic that makes a median resist a wild value; it *protects
+  against* vertical outliers; it *cannot prove* resistance to high leverage either, and like Theil–Sen
+  it sacrifices some efficiency when the data are actually clean and symmetric.
+
+None of these is "assumption-free." Each still assumes a linear structure; each trades some efficiency
+for resistance; and the two residual-based fits (Huber, L1) are weaker against the *leverage* point
+than against the *vertical outlier*. That is the honest reading — not "robust beats OLS," but "each
+estimator resists a different kind of bad point, and you should know which."
+
+### Step 3 — Put all four slopes side by side and trace the damage
+
+Collect the four slopes into one table, then make a static plot with all four lines drawn over the
+contaminated scatter so you can *see* which point bends which fit.
+
+```r
+set.seed(45203)
+
+# All four slopes on the SAME contaminated data, against the clean structure (~1.5):
+slopes <- c(
+  clean_OLS = coef(fit_clean)[["sessions"]],   # ~ 1.5  (the truth)
+  OLS       = coef(fit_ols)[["sessions_c"]],   # ~ 0.6  (flattened)
+  TheilSen  = coef(fit_ts)[["sessions_c"]],    # ~ 1.45 (median pairwise slope)
+  Huber     = coef(fit_hub)[["sessions_c"]],   # ~ 1.4  (downweighted residuals)
+  L1_LAD    = coef(fit_l1)[["sessions_c"]]     # ~ 1.5  (median regression)
+)
+round(slopes, 2)
+# clean_OLS       OLS  TheilSen     Huber    L1_LAD
+#      1.50      0.60      1.45      1.40      1.50
+
+# A static look: the contaminated scatter with the two bad points marked and all fits drawn.
+plot(sessions_c, gain_c,
+     main = "Dataset D: one leverage point flattens OLS; robust fits hold",
+     xlab = "Sessions attended", ylab = "Wellbeing gain (points)")
+points(c(20, 5), c(2, 40), pch = 19, cex = 1.6)    # the two planted contaminating points
+abline(fit_ols,  lwd = 2, lty = 1)                 # OLS  ~ 0.6  (the flattened line)
+abline(fit_ts,   lwd = 2, lty = 2)                 # Theil-Sen ~ 1.45
+abline(fit_hub,  lwd = 2, lty = 3)                 # Huber     ~ 1.4
+abline(fit_l1,   lwd = 2, lty = 4)                 # L1 / LAD  ~ 1.5
+```
+
+The table makes the lesson one line wide: on identical data the OLS slope reads $0.6$ while the three
+robust slopes cluster around the clean $1.5$. The plot makes it geometric — the OLS line tilts down
+toward the high-leverage point at $(20, 2)$, while the robust lines pass through the body of the clean
+points and largely ignore both planted observations. **The interpretation that matters:** the gap
+between $0.6$ and $1.45$ is not a rounding quarrel, it is two *different conclusions* about the program
+— "more sessions barely help" versus "each session adds about $1.5$ points of gain." Method choice
+here changes the substantive answer, so you report the comparison, name the points that drive the OLS
+fit, and **investigate** the two contaminants (a data-entry error? a genuinely extreme responder?)
+rather than quietly deleting them. What none of the robust fits can prove is *why* those two points are
+extreme — resistance buys you a stable slope, not an explanation.
+
+## Verify
+
+This is the moment where the simulation and the Week 11 reasoning are supposed to meet. Check each
+target against the note, and treat a mismatch as a bug in your code, not a discovery about the world —
+every target value is the locked, synthetic Week 11 slice.
+
+- **The clean slope is $\approx 1.5$.** `coef(fit_clean)[["sessions"]]` from Step 1 should be near
+  $1.5$. If it is not, your clean structure drifted from
+  $\text{gain} \approx 2 + 1.5\cdot\text{sessions}$ — re-check the seed and the `gain` formula in
+  Setup (intercept $2$, slope $1.5$, residual SD $4$).
+- **The contaminated OLS slope is $\approx 0.6$.** `coef(fit_ols)[["sessions_c"]]` should land near
+  $0.6$. If it is still near $1.5$, you almost certainly fit `lm()` on the *clean* vectors — confirm
+  you passed `gain_c ~ sessions_c`, the versions that include the two planted points.
+- **The robust slopes cluster near the clean structure.** Theil–Sen $\approx 1.45$, Huber
+  $\approx 1.4$, L1/LAD $\approx 1.5$. If a robust slope comes back near $0.6$, you fit it on the wrong
+  vectors or dropped a contaminating point; if Theil–Sen and L1 land far apart, re-check that `lqs` and
+  `rq` both used the contaminated data.
+- **The two planted points are still in the data.** `length(gain_c)` should be $42$ (the $40$ clean
+  rows plus the leverage point and the vertical outlier). If it is $40$, you never added them, and the
+  whole contrast disappears — the point of the lab is that the robust fits hold *with the bad points
+  present*, not after deleting them.
+- **The conclusion is stated honestly.** In one sentence: *two contaminating points — a high-leverage
+  entry error at $(20, 2)$ and a vertical outlier at $(5, 40)$ — flatten the OLS slope from the clean
+  $1.5$ to about $0.6$, while Theil–Sen ($1.45$), Huber ($1.4$), and L1 ($1.5$) recover the structure
+  by ranking or downweighting those points; the robust fits give a stable slope but do not explain why
+  the two points are extreme, which is why you investigate rather than auto-delete.* If your written
+  conclusion says "robust regression has no assumptions" or silently drops the contaminants, the
+  reasoning — not the code — needs fixing.
+
+A small honest note on reproducibility: the clean 40 points are drawn with `rnorm`/`runif`, so across
+seeds the fitted slopes will wobble in their last digit around the locked values. The *two planted
+points are fixed*, so the OLS-versus-robust contrast — a flattened $\approx 0.6$ against a recovered
+$\approx 1.45$ — is stable; that contrast, not the third decimal, is the lesson.
+
+## AI use note
+
+If you use an AI assistant on this lab, record it briefly. The load-bearing column is **Verification**
+— how *you* confirmed the output yourself, against the Week 11 note and the locked numbers, rather than
+trusting the tool. Computation, AI-assisted or not, does not rescue a contaminated fit or certify a
+slope, and it must never be used to silently delete an inconvenient point.
+
+| Tool | Purpose | Verification |
+|------|---------|--------------|
+| LLM chat assistant | Explain why a high-leverage point moves the OLS slope more than a vertical outlier does | Re-derived it from the squared-residual penalty, re-ran Step 1 to confirm the leverage point at $(20,2)$ drove the slope to $\approx 0.6$, and reconciled the explanation against the Week 11 note's leverage-vs-outlier distinction |
+| LLM chat assistant | Suggest the right `MASS::rlm` / `quantreg::rq` calls for Huber and L1 fits | Ran all three robust fits, confirmed Theil–Sen $\approx 1.45$, Huber $\approx 1.4$, L1 $\approx 1.5$ on the contaminated data, and checked that none required deleting the planted points |
+| Code formatter / linter | Tidy the four-fit comparison block for readability | Diffed before/after to confirm only whitespace changed; re-ran to confirm `round(slopes, 2)` still printed the locked $0.60 / 1.45 / 1.40 / 1.50$ row |
+
+## See also
+
+- [Week 11 — Robust regression ideas](../notes/week-11-robust-regression-ideas.qmd) — the companion
+  note: why least squares breaks under contamination and how robust fits hold.
+- [Week 10 — Robust summaries & outliers](../notes/week-10-robust-summaries-and-outliers.qmd) — the
+  same Dataset D, one variable at a time: median, trimmed mean, MAD, and the breakdown point.
+- [Week 12 — Comparing parametric & nonparametric conclusions](../notes/week-12-comparing-parametric-and-nonparametric-conclusions.qmd)
+  — OLS slope $0.6$ versus robust $1.45$ set beside the t/permutation/rank-sum comparison on Dataset W.
+- [Robustness & outliers guide](../resources/robustness-and-outliers-guide.qmd) — outlier vs leverage
+  vs influence, the breakdown point, and the rule *investigate, do not auto-delete.*
+- [Methods glossary](../resources/methods-glossary.qmd) — least squares, least absolute deviations,
+  Theil–Sen, Huber M-estimation, leverage, breakdown point.
+
+The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only.

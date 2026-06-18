@@ -1,0 +1,346 @@
+---
+title: "Week 6 — Bootstrap confidence intervals"
+subtitle: "How we turn a bootstrap distribution into an interval — and when it fails"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "IMS (Çetinkaya-Rundel & Hardin), bootstrap confidence intervals — supports percentile/BCa intervals"
+toc: true
+---
+
+## The week question
+
+Last week you built a bootstrap *distribution* — you resampled the data with replacement, recomputed
+a statistic each time, and watched its values spread out. That spread told you how variable the
+statistic is. This week the question is narrower and more demanding: **how do you turn that cloud of
+bootstrap values into a confidence interval — a concrete range you are willing to report — and how do
+you know when the bootstrap has quietly lied to you?** The answer is not one recipe. There are several
+interval methods (percentile, basic, BCa), they can *disagree* when the data are skewed, and the
+bootstrap has genuine failure cases where no method rescues it. The point of the week is to read an
+interval honestly: to say what it assumes, what it protects against, and where it cannot be trusted.
+
+## Why this matters
+
+A point estimate without an interval oversells itself. "The Express workflow shaves about 6 minutes
+off the median wait" sounds precise; the truth is that another sample of arrivals would have produced
+a somewhat different number. A confidence interval is how you communicate that wobble — and the
+bootstrap is the tool that lets you build one **without assuming a normal sampling distribution** for
+your statistic. That matters enormously here, because the statistics this course cares about — medians,
+trimmed means, differences in medians, correlations on skewed data — do *not* have tidy normal sampling
+distributions, especially in small, skewed samples. The classical "estimate $\pm\, 2\,\text{SE}$"
+formula assumes a symmetric, normal-shaped sampling distribution, and for a median of skewed wait times
+that assumption is simply wrong.
+
+So the bootstrap interval is one of the course's signature payoffs: an interval for a statistic whose
+sampling theory you would otherwise have to derive (or fake). But the week's deeper lesson is the one
+this whole course keeps returning to — **assumption-light is not assumption-free.** A bootstrap interval
+is a *procedure with assumptions*, not a guarantee. It assumes the sample resembles the population well
+enough that resampling the sample mimics re-sampling the population. When that assumption breaks — most
+sharply for *extreme order statistics* like the maximum — the interval can look reassuringly narrow
+while being badly wrong. Reading the interval *and* knowing its failure modes is the whole job.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Explain how a confidence interval is read off a bootstrap distribution, and state the population
+  quantity the interval is meant to cover.
+- Construct and contrast the three standard bootstrap intervals — **percentile**, **basic**, and
+  **BCa (bias-corrected and accelerated)** — and say in words what each one does differently.
+- Explain *why* percentile, basic, and BCa intervals can **disagree under skew**, and why BCa is the
+  one that corrects for bias and skew.
+- Interpret a bootstrap interval correctly — as a range of plausible values for a population quantity,
+  with a stated confidence level — and name the assumption-ladder move it rests on.
+- Recognize the bootstrap's **failure cases**, especially a CI for the **maximum** (or minimum), and
+  explain why an extreme order statistic defeats the bootstrap.
+
+## Core vocabulary
+
+- **Bootstrap distribution** — the distribution of a statistic recomputed across many resamples drawn
+  with replacement from the data; the engine for every interval below.
+- **Percentile interval** — the interval whose endpoints are the $2.5$th and $97.5$th percentiles of
+  the bootstrap distribution (for a $95\%$ CI); read straight off the cloud of bootstrap values.
+- **Basic (reverse-percentile) interval** — an interval built by reflecting the bootstrap distribution
+  around the observed estimate; it uses the *same* percentiles but flips them about the estimate.
+- **BCa interval** — bias-corrected and accelerated; a percentile-type interval that **shifts and
+  stretches** the percentiles to correct for bias (the bootstrap distribution being off-center) and
+  skew/acceleration (its spread changing with the parameter value).
+- **Bias (of a bootstrap estimate)** — a systematic gap between the center of the bootstrap distribution
+  and the observed estimate; BCa's "bias-correction" term targets this.
+- **Coverage** — the long-run fraction of intervals (built this way) that actually contain the true
+  population quantity; the property a $95\%$ CI is *supposed* to have.
+- **Extreme order statistic** — a value at the far edge of the sorted data, such as the sample maximum
+  $x_{(n)}$ or minimum $x_{(1)}$; the bootstrap handles these badly.
+- **Failure case** — a setting (extreme order statistics, tiny $n$, dependent data) where the bootstrap
+  approximation is not valid and the interval cannot be trusted regardless of method.
+
+## Concept development
+
+### From a bootstrap distribution to an interval: the percentile idea
+
+Start from where Week 5 left off. You have a statistic $\hat\theta$ computed on the data — this week the
+running example is the **difference in medians**, Express minus Standard, observed at $\hat\theta =
+12 - 18 = -6$ minutes. You resample: draw $25$ Express waits with replacement, draw $25$ Standard waits
+with replacement, recompute the difference in medians, and repeat $B \approx 10{,}000$ times. The result
+is a bootstrap distribution of differences — a cloud of $10{,}000$ values centered near $-6$.
+
+The **percentile interval** is the most direct way to read an interval off that cloud: for a $95\%$
+interval, take the empirical $2.5$th percentile and the $97.5$th percentile of the bootstrap
+differences, and report them as the endpoints. The logic is intuitive — the middle $95\%$ of the
+resampled estimates is a $95\%$ range of plausible values for the statistic, *if* the bootstrap
+distribution is a faithful stand-in for the true sampling distribution of $\hat\theta$.
+
+For Dataset W, the locked **percentile $95\%$ CI for the difference in medians is approximately
+$(-10,\, -2)$ minutes** — and crucially, **it excludes $0$**. Interpreted: a plausible range for how
+much faster the Express median wait is runs from about $2$ to about $10$ minutes, and because $0$ is not
+in the interval, the data are consistent with a real reduction rather than no difference at all. The
+assumption-ladder move: you **assume** the two samples resemble their populations well enough that
+resampling them mimics resampling the populations; you **resample** with replacement within each group;
+this **protects against** having to assume a normal sampling distribution for a difference in medians
+(which it does not have); it **cannot prove** that the reduction is exactly in this range — the interval
+is a procedure that covers the truth about $95\%$ of the time *when its assumptions hold*, not a
+certainty.
+
+### Three intervals, and why they disagree under skew
+
+The percentile interval is not the only way to convert the bootstrap distribution into endpoints, and
+the alternatives matter precisely when the data are skewed — which is the whole reason you reached for
+the bootstrap.
+
+- **Percentile.** Endpoints = the $2.5$th and $97.5$th percentiles of the bootstrap values. Simple, but
+  it assumes the bootstrap distribution is roughly an unbiased, symmetric picture of the sampling
+  distribution.
+
+- **Basic (reverse-percentile).** Instead of trusting the percentiles directly, it reflects them about
+  the observed estimate $\hat\theta$. If the bootstrap distribution leans right, the basic interval
+  leans the *opposite* way, on the reasoning that bootstrap error mirrors sampling error. Formally its
+  endpoints are $\,2\hat\theta - \hat\theta^*_{(0.975)}\,$ and $\,2\hat\theta - \hat\theta^*_{(0.025)}$,
+  where $\hat\theta^*_{(q)}$ is the $q$ quantile of the bootstrap values.
+
+- **BCa (bias-corrected and accelerated).** A refined percentile method that adjusts *which* percentiles
+  to read off, using two corrections: a **bias-correction** $\hat z_0$ that shifts the percentiles when
+  the bootstrap distribution is off-center relative to $\hat\theta$, and an **acceleration** $\hat a$
+  that stretches them when the spread of the distribution changes with the parameter value (the
+  signature of skew). When $\hat z_0 = 0$ and $\hat a = 0$, BCa *reduces to* the percentile interval.
+
+Here is the teaching point. On a large, clean, symmetric sample, all three intervals nearly coincide —
+the bootstrap distribution is centered and symmetric, so reflecting it or shifting its percentiles
+changes almost nothing. **Under skew they can disagree**, sometimes noticeably, because a skewed
+bootstrap distribution is *not* a faithful symmetric picture: the percentile method puts the endpoints
+in the wrong places, the basic method's reflection over- or under-corrects, and **BCa is the one built
+to handle exactly this**, correcting for both bias and skew. For the right-skewed Dataset W waits, the
+honest report is that the percentile, basic, and BCa intervals for the difference in medians **need not
+be identical**; BCa is generally the more trustworthy choice precisely because the data are skewed. The
+assumption-ladder move: the bootstrap still **assumes** the resample mimics re-sampling the population;
+BCa additionally **estimates and corrects** for bias and skew in that approximation; it **protects
+against** the percentile method's symmetry assumption; it still **cannot prove** correct coverage in a
+genuinely pathological case (see the failure case below).
+
+### The failure case: a bootstrap CI for the maximum
+
+Every method above is a way of reading a bootstrap distribution. None of them helps if the bootstrap
+distribution itself is the wrong shape — and there is a clean, lockable example where it is. Suppose
+you wanted a confidence interval not for the median wait but for the **maximum wait** — the single
+longest service time, an extreme order statistic $x_{(n)}$.
+
+Think about what a bootstrap resample can produce. When you resample the Standard waits with
+replacement, every resampled value is *one of the values already in your sample*. The largest value any
+resample can ever contain is the **sample maximum you already observed** — the bootstrap can never draw
+a value *beyond* it, because that value is not in the data to be drawn. So the bootstrap distribution of
+the maximum is pinned at the top: it can equal the observed max (whenever that point is resampled, which
+happens often) or fall below it, but it can never exceed it. The resulting "interval" sits entirely at
+or below the observed maximum and looks deceptively narrow.
+
+That narrowness is a lie. The *true* uncertainty about a population maximum is large and one-sided — the
+real maximum is very plausibly **larger** than anything you happened to observe, and the bootstrap, by
+construction, has no way to express that. So **a bootstrap CI for the maximum wait is unreliable: the
+bootstrap understates the uncertainty for an extreme.** The assumption-ladder move makes the failure
+precise. The bootstrap **assumes** the empirical distribution $\hat F_n$ is a good stand-in for the
+population $F$. For statistics that depend on the *bulk* of the distribution (medians, trimmed means,
+differences in medians), that assumption is reasonable. For a statistic that depends on the very
+*edge* of the distribution — the maximum, the minimum, an extreme quantile — $\hat F_n$ is a terrible
+stand-in, because the sample edge is not the population edge, and resampling can never repair an edge it
+cannot see. The bootstrap **cannot prove**, and here cannot even sensibly estimate, the uncertainty in
+an extreme. The honest conclusion is the week's refrain: **the bootstrap is a procedure with
+assumptions, not a guarantee.** (The same logic flags two cousins: very *small* $n$, where $\hat F_n$ is
+too coarse, and *dependent* data, where resampling rows destroys the dependence you needed to keep.)
+
+## Worked examples
+
+### Worked example — Dataset W: a percentile CI for the difference in medians (recurring slice)
+
+**What is assumed.** You have two independent samples of service wait times — Standard ($n_C = 25$,
+median $18$ min) and Express ($n_T = 25$, median $12$ min) — both right-skewed with a few very long
+waits. You want a $95\%$ confidence interval for the **difference in medians** (Express $-$ Standard),
+observed at $\hat\theta = -6$ minutes. You assume each sample resembles its population closely enough
+that resampling *within each group* with replacement mimics drawing fresh samples. Data are synthetic;
+seed set.
+
+**The computation.** Resample $25$ Express and $25$ Standard waits with replacement, recompute the
+difference in medians, repeat $B = 10{,}000$ times, and read the $2.5$th and $97.5$th percentiles. The
+static R below shows the idiom; it is teaching code and is not executed here.
+
+```r
+set.seed(45203)
+
+# Synthetic Dataset W slice: right-skewed service waits (minutes).
+# Summarized to the locked shape; two long Standard waits sit in the tail.
+standard <- c(10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 18, 19, 20, 21, 22,
+              23, 24, 25, 26, 28, 31, 36, 42, 64, 88)   # n_C = 25, median 18
+express  <- c( 6,  6,  7,  8,  8,  9, 10, 10, 11, 12, 12, 12, 13, 14, 15,
+              16, 17, 18, 19, 20, 22, 25, 29, 38, 47)   # n_T = 25, median 12
+
+theta_hat <- median(express) - median(standard)         # observed diff = 12 - 18 = -6 min
+
+boot_diff <- replicate(10000, {
+  e <- sample(express,  replace = TRUE)                  # resample WITHIN each group
+  s <- sample(standard, replace = TRUE)
+  median(e) - median(s)                                  # recompute the difference in medians
+})
+
+# Percentile 95% CI: the 2.5th and 97.5th percentiles of the bootstrap differences
+quantile(boot_diff, c(0.025, 0.975))
+#   2.5%  97.5%
+#  -10     -2          <- percentile 95% CI ~ (-10, -2) min, EXCLUDES 0
+
+# Under skew, percentile / basic / BCa need NOT agree; BCa corrects bias + skew.
+# (BCa via boot::boot.ci(..., type = "bca") in the lab.)
+```
+
+**Interpretation.** The percentile $95\%$ CI for the difference in medians is about $(-10, -2)$ minutes,
+and it **excludes $0$**: a plausible range for how much faster the Express median is runs from roughly
+$2$ to $10$ minutes, so the data are consistent with a genuine reduction, not with "no difference."
+Name the assumption-ladder move: you **assumed** each sample mimics its population; you **resampled**
+with replacement within each group (preserving the two-group structure); this **protects against**
+needing a normal sampling distribution for a difference in medians; it **cannot prove** the true
+difference is exactly in $(-10, -2)$ — it is a procedure that brackets the truth about $95\%$ of the
+time when its assumptions hold. Because the waits are skewed, you should also report the BCa interval:
+percentile, basic, and BCa **can disagree** here, and BCa is the method that corrects for the bias and
+skew the percentile method ignores.
+
+### Worked example — a bootstrap CI for a correlation (transfer, new context)
+
+**What is assumed.** Switch contexts entirely. A researcher has $n = 40$ paired measurements — each
+person's weekly *step count* and their *sleep-quality score* — and computes a sample Pearson correlation
+of $\hat r = 0.45$. They want a $95\%$ interval for the population correlation $\rho$. The classical
+Fisher-$z$ interval assumes bivariate normality; the scatter here is skewed (a few very-high-step
+outliers), so the bootstrap is the safer tool. You assume the $40$ *pairs* resemble the population of
+pairs well enough that resampling pairs mimics fresh sampling. These numbers are illustrative and
+distinct from Dataset W.
+
+**The computation.** The key discipline is to **resample whole pairs, not the two columns separately** —
+breaking the pairing would destroy the very correlation you are estimating. Suppose the resampling gives
+a bootstrap distribution of correlations that is **left-skewed** (correlations are bounded above by $1$,
+so the upper tail is compressed). Then:
+
+$$
+\text{percentile } 95\% \text{ CI: } (0.18,\ 0.66), \qquad
+\text{BCa } 95\% \text{ CI: } (0.21,\ 0.69).
+$$
+
+The two intervals are **shifted relative to each other** — a textbook symptom of skew. Because the
+bootstrap distribution of $\hat r$ is not symmetric, the percentile method places the endpoints slightly
+off; BCa nudges them to correct the bias and skew, here pulling the whole interval a little higher.
+
+**Interpretation.** A plausible range for the population correlation is roughly $0.2$ to $0.7$ —
+positive, but wide, because $n = 40$ is modest and a correlation on skewed data is variable. The
+disagreement between the percentile and BCa intervals is *informative*: it is the skew announcing
+itself, and it tells you to trust BCa over the plain percentile method here. Name the assumption-ladder
+move: you **assumed** the pairs mimic the population of pairs; you **resampled whole pairs** (preserving
+the dependence that *is* the signal); this **protects against** the bivariate-normality assumption of
+the Fisher-$z$ interval; it **cannot prove** $\rho$ lies in this range — and note what would break it. If
+instead you had asked for a CI for the *maximum* step count, the bootstrap would fail for the same reason
+as in Dataset W: the sample max caps every resample, so the interval would understate uncertainty about
+an extreme. The transfer is the lesson: the method moves cleanly to a new statistic and context, but the
+*failure mode for extremes travels with it.*
+
+## A common mistake
+
+This week braids together two classic errors — **treating a bootstrap CI as truth** (Risk 4) and
+**bootstrapping an extreme** (Risk 5).
+
+The first sounds like: "The percentile CI is $(-10, -2)$, so the bootstrap *proves* the difference is in
+that range, no assumptions needed." Both halves are wrong. A bootstrap interval is **not** assumption-
+free — it assumes your sample resembles the population well enough that resampling the sample stands in
+for resampling the population, and (for the percentile method) that the bootstrap distribution is a
+symmetric, unbiased picture of the sampling distribution. When the data are skewed, that symmetry
+assumption fails, which is exactly *why* percentile, basic, and BCa can disagree. The fix is not to pick
+the narrowest interval; it is to **name the method** you are reporting (percentile vs basic vs BCa) and,
+under skew, to prefer **BCa** because it corrects for the bias and skew the percentile method ignores. An
+interval reported without naming its method, on visibly skewed data, is a result you cannot audit.
+
+The second error is more dangerous because the output looks fine. **Bootstrapping an extreme** —
+building a bootstrap CI for the **maximum** or **minimum** — produces a deceptively narrow interval that
+*badly understates* the uncertainty. The sample maximum is an order statistic the bootstrap can never
+resample *beyond*: every resampled value is already in the data, so the resampled max is pinned at or
+below the observed max, and the true population maximum is very plausibly larger than anything you saw.
+The interval looks confident and is wrong. The fix is to **recognize the statistic before you bootstrap
+it**: the bootstrap is reliable for statistics that depend on the *bulk* of the distribution (medians,
+trimmed means, differences in medians, correlations) and unreliable for ones that depend on its *edge*
+(maxima, minima, extreme quantiles), as well as for very small $n$ and dependent data resampled as if
+independent. Said once more, plainly: **the bootstrap is a procedure with assumptions, not a guarantee.**
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence, explain how a percentile $95\%$ confidence interval is read off a bootstrap
+   distribution, and say what population quantity it is meant to cover.
+2. The Dataset W percentile CI for the difference in medians is about $(-10, -2)$ and excludes $0$. Say
+   in one sentence what "excludes $0$" lets you conclude — and what it does *not* let you conclude.
+3. A classmate reports a percentile and a BCa interval that **disagree** on the same skewed data and
+   asks which is the mistake. Explain why disagreement is *expected* here and which interval you would
+   report, and why.
+4. Explain, in your own words, why a bootstrap CI for the **maximum** wait understates the uncertainty.
+   Name the property of the resampling that causes it.
+5. Name two settings *other than* an extreme order statistic where the bootstrap can fail, and say in a
+   phrase why each breaks the "resample mimics re-sampling the population" assumption.
+
+## Reading and source pointer
+
+This week is grounded in the instructor notes (the primary course materials) for bootstrap confidence
+intervals and their failure cases, with the **IMS** (Çetinkaya-Rundel & Hardin) treatment of
+**bootstrap confidence intervals** for the percentile and BCa interval concepts and the simulation-based
+sequence that leads into them. The companion lab extends the bootstrap-the-median workflow from Week 5
+into intervals. *These notes are the course's own synthesis, grounded in but not copied from the
+sources.* No prose, examples, exercises, figures, or solutions are reproduced from any source.
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value here is
+**drafted, synthetic, and not independently checked**. The load-bearing numbers are: the Dataset W
+medians ($18$ Standard, $12$ Express) and observed difference in medians ($-6$ min); the **percentile
+$95\%$ CI for the difference in medians $\approx (-10, -2)$ min** (excludes $0$); the claim that the
+**percentile, basic, and BCa intervals can disagree under skew** (BCa correcting bias and skew); the
+**maximum-wait failure case** (a bootstrap CI for an extreme understates uncertainty); and the
+illustrative transfer correlation $\hat r = 0.45$ with percentile CI $(0.18, 0.66)$ and BCa CI
+$(0.21, 0.69)$. All example data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we leave the two-sample resampling spine and turn to **rank-based one-sample and paired
+methods** on Dataset S — the before/after wellbeing scores measured on the same $15$ participants. You
+will meet the **sign test** (which uses only the signs of the paired differences, $p \approx 0.057$) and
+the **Wilcoxon signed-rank test** (which uses signed magnitudes and is sharper, $p \approx 0.02$),
+arranged on the same assumption ladder: sign test $\subset$ signed-rank $\subset$ paired $t$-test, each
+buying power by assuming a little more. Week 7 also carries the **midterm (Fri Oct 9)**, which covers
+weeks 1–7 — including the bootstrap intervals from this week.
+
+## See also
+
+- [Week 5 — Bootstrap distributions](week-05-bootstrap-distributions.qmd) — where the bootstrap
+  distribution this week's intervals are read off comes from.
+- [Week 7 — Rank-based one-sample and paired methods](week-07-rank-based-one-sample-and-paired-methods.qmd)
+  — the next rung on the assumption ladder.
+- [Lab 5 — Bootstrap the median](../labs/lab-05-bootstrap-the-median.qmd) — the companion workflow this
+  week's intervals extend.
+- [Resampling guide](../resources/resampling-guide.qmd) — permutation vs bootstrap side by side.
+- [Methods glossary](../resources/methods-glossary.qmd) — percentile, basic, and BCa intervals; coverage;
+  extreme order statistics.
+- [Method chooser](../resources/method-chooser.qmd) — when a bootstrap interval is the right tool, and
+  when it is not.

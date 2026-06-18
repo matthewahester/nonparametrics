@@ -1,0 +1,138 @@
+# Resampling, Nonparametric & Robust Methods — public Quarto course site (assembled course materials).
+# Sibling of matthewhester.com; intended to live at /nonparametrics/ under that domain.
+# Layout/theme aligned to the matthewhester.com course family (cosmo + styles.css, dark navbar,
+# floating sidebar, right-side TOC, MathML math). site-url set for the combined deploy; this repo
+# does not self-deploy (no CI here — the hub workflow assembles the courses).
+project:
+  type: website
+  output-dir: _site
+  # RENDER ALLOW-LIST (docs/08 §2 boundary hazard; docs/26 §6). Fails safe — only the
+  # public sections below render into _site/. Every private dir (_state/ underscore-skipped,
+  # plus source_text/, assessment_shadow/, run_reports/, accessibility/) is excluded.
+  # NOTE: a bare "*.qmd" matches RECURSIVELY in Quarto 1.8.26 and could leak nested private .qmd.
+  # List the three public root pages explicitly instead, and negate private dirs as
+  # belt-and-suspenders (docs/08 §2, docs/26 §6).
+  render:
+    - index.qmd
+    - syllabus.qmd
+    - schedule.qmd
+    - notes/*.qmd
+    - labs/*.qmd
+    - resources/*.qmd
+    - "!_state/"
+    - "!source_text/"
+    - "!assessment_shadow/"
+    - "!run_reports/"
+    - "!accessibility/"
+
+website:
+  title: "Resampling, Nonparametric & Robust Methods"
+  site-url: https://matthewhester.com/nonparametrics/
+  description: |
+    Public-facing course materials for Resampling, Nonparametric & Robust Methods —
+    an assembled course site (notes, labs, and resources) curated by Matt Hester.
+  open-graph: true
+  navbar:
+    pinned: true
+    background: dark            # black top bar — the family signature
+    logo: assets/icon.png
+    logo-alt: "Resampling, Nonparametric & Robust Methods — a red-orange vanadinite course mark"
+    left:
+      - href: index.qmd
+        text: Home
+      - href: syllabus.qmd
+        text: Syllabus
+      - href: schedule.qmd
+        text: Schedule
+  sidebar:
+    style: floating
+    collapse-level: 2
+    contents:
+      - section: "Notes"
+        href: notes/index.qmd
+        contents:
+          - href: notes/index.qmd
+            text: "Notes overview"
+          - section: "Part I — Foundations of assumption-light reasoning (Wk 1–2)"
+            contents:
+              - href: notes/week-01-why-assumption-light-methods.qmd
+                text: "1 — Why assumption-light methods?"
+              - href: notes/week-02-order-statistics-ranks-and-empirical-distributions.qmd
+                text: "2 — Order statistics, ranks & empirical distributions"
+          - section: "Part II — Resampling inference (Wk 3–6)"
+            contents:
+              - href: notes/week-03-permutation-logic.qmd
+                text: "3 — Permutation logic"
+              - href: notes/week-04-randomization-tests.qmd
+                text: "4 — Randomization tests"
+              - href: notes/week-05-bootstrap-distributions.qmd
+                text: "5 — Bootstrap distributions"
+              - href: notes/week-06-bootstrap-confidence-intervals.qmd
+                text: "6 — Bootstrap confidence intervals"
+          - section: "Part III — Rank-based & ordinal methods (Wk 7–9)"
+            contents:
+              - href: notes/week-07-rank-based-one-sample-and-paired-methods.qmd
+                text: "7 — Rank-based one-sample & paired (midterm)"
+              - href: notes/week-08-two-sample-rank-methods.qmd
+                text: "8 — Two-sample rank methods"
+              - href: notes/week-09-categorical-and-ordinal-outcomes.qmd
+                text: "9 — Categorical & ordinal outcomes"
+          - section: "Part IV — Robustness, comparison & synthesis (Wk 10–15)"
+            contents:
+              - href: notes/week-10-robust-summaries-and-outliers.qmd
+                text: "10 — Robust summaries & outliers"
+              - href: notes/week-11-robust-regression-ideas.qmd
+                text: "11 — Robust regression ideas"
+              - href: notes/week-12-comparing-parametric-and-nonparametric-conclusions.qmd
+                text: "12 — Comparing parametric & nonparametric conclusions"
+              - href: notes/week-13-simulation-study-of-method-behavior.qmd
+                text: "13 — Simulation study of method behavior"
+              - href: notes/week-14-applied-robust-methods-report-workshop.qmd
+                text: "14 — Applied robust-methods report workshop"
+              - href: notes/week-15-final-review.qmd
+                text: "15 — Final review"
+      - section: "Labs"
+        href: labs/index.qmd
+        contents:
+          - href: labs/index.qmd
+            text: "Labs overview"
+          - href: labs/lab-04-build-a-randomization-test.qmd
+            text: "Lab 4 — Build a randomization test"
+          - href: labs/lab-05-bootstrap-the-median.qmd
+            text: "Lab 5 — Bootstrap the median"
+          - href: labs/lab-11-robust-regression-versus-least-squares.qmd
+            text: "Lab 11 — Robust regression vs least squares"
+          - href: labs/lab-13-a-method-comparison-simulation.qmd
+            text: "Lab 13 — A method-comparison simulation"
+      - section: "Resources"
+        href: resources/index.qmd
+        contents:
+          - href: resources/index.qmd
+            text: "Resources overview"
+          - href: resources/methods-glossary.qmd
+            text: "Methods glossary"
+          - href: resources/method-chooser.qmd
+            text: "Method chooser (decision guide)"
+          - href: resources/resampling-guide.qmd
+            text: "Resampling guide (permutation vs bootstrap)"
+          - href: resources/robustness-and-outliers-guide.qmd
+            text: "Robustness & outliers guide"
+  page-footer:
+    left: "© 2026 Matt Hester · Resampling, Nonparametric & Robust Methods"
+    center: "[Matt Hester · matthewhester.com](https://matthewhester.com/)"
+    right: "Built with [Quarto](https://quarto.org)"
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-location: right
+    anchor-sections: true
+    smooth-scroll: true
+    link-external-newwindow: true
+    fontsize: 1.05em
+    mainfont: "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    monofont: "JetBrains Mono, Consolas, Menlo, monospace"
+# Math renders as MathML/MathJax (accessible text), never as images (docs/05 P7; docs/08 §4).
+# R is shown as static, non-executed ```r fences here, so render is deterministic and R-free.

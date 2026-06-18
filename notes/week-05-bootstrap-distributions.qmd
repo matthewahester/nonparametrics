@@ -1,0 +1,359 @@
+---
+title: "Week 5 — Bootstrap distributions"
+subtitle: "How resampling with replacement approximates the sampling variability of a statistic"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "IMS (Çetinkaya-Rundel & Hardin), bootstrapping for the sampling distribution of a statistic — supports the bootstrap; ModernDive (Ismay, Kim & Valdivia), the bootstrap workflow — supports the companion lab"
+toc: true
+---
+
+## The week question
+
+You have one sample of Express wait times and you compute its median. That single number is your
+best guess at the typical Express wait — but how *uncertain* is it? If a fresh batch of Express
+arrivals walked in tomorrow, the new sample median would land somewhere a little different. The
+trouble is that you only have the one sample; you cannot re-run the clinic a thousand times to watch
+the median wobble. This week's question is exactly that gap: **when you cannot draw new samples from
+the population, how can resampling — with replacement — from the data you already have approximate
+the sampling variability of a statistic?** The bootstrap is the answer, and the median is the place
+where its mechanics are most revealing.
+
+## Why this matters
+
+Weeks 3 and 4 built reference distributions by *shuffling labels* to test a null hypothesis. The
+bootstrap is a different tool answering a different question. A permutation test asks "could this
+difference have arisen by chance under no effect?" The bootstrap asks "how precise is my estimate?" —
+it is about the **standard error** and, next week, the **confidence interval**, not about a null. The
+two share a computational rhythm (resample, recompute, repeat), but they are not the same move, and a
+recurring confusion in this course is collapsing them.
+
+The reason the bootstrap belongs at the center of an assumption-light course is that the statistics
+you most want to use under skew and contamination — the **median**, the **trimmed mean**, a
+**difference in medians** — have no tidy closed-form standard-error formula the way a sample mean
+does. The textbook $s/\sqrt{n}$ is for the mean and rests on assumptions about the population. The
+median's sampling variability depends on the unknown density right at the center of the distribution,
+which you cannot read off a formula. The bootstrap sidesteps that: it treats the **empirical
+distribution** $\hat F_n$ — the data itself — as a stand-in for the population, and draws new samples
+*from the data* to watch the statistic vary. That is a genuinely powerful idea. It is also not a free
+lunch. The bootstrap **estimates** sampling variability by assuming the sample resembles the
+population; it can break when that assumption fails (extreme order statistics, tiny $n$, dependent
+data). Naming that trade — assumption-light is not assumption-free — is the discipline this week.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Explain what it means to **resample with replacement** from a sample, and why that is the same as
+  drawing a fresh sample from the empirical distribution $\hat F_n$.
+- Describe the **bootstrap distribution** of a statistic — the spread of the statistic recomputed
+  across many resamples — and distinguish it from the (unknown) true sampling distribution.
+- Compute and read a **bootstrap standard error** as the standard deviation of the bootstrap
+  distribution, and report it for the Express median ($\approx 1.2$ min) and the difference in medians
+  ($\approx 2.0$ min).
+- Explain why the bootstrap distribution of a **median** is **lumpy / discrete** — it can only take a
+  handful of distinct order-statistic values — and why that is a feature of the statistic, not a bug
+  in the method.
+- Name the **assumption-ladder move** the bootstrap makes: what it assumes, what it resamples, what it
+  protects against, and what it cannot prove — including the two ways it fails (the wrong resampling
+  unit; treating it as assumption-free).
+
+## Core vocabulary
+
+- **Empirical distribution / ECDF** $\hat F_n(x) = \frac{1}{n}\sum_i \mathbf{1}\{x_i \le x\}$ — the
+  data's own distribution, putting mass $1/n$ on each observed value; the thing you resample *from*.
+- **Resample with replacement** — draw $n$ values from your $n$ data points where each draw is equally
+  likely to be any observation and the same observation can be picked more than once; equivalently, a
+  sample from $\hat F_n$.
+- **Bootstrap sample** — one such resample, the same size $n$ as the original, in which some original
+  points appear several times and others not at all.
+- **Bootstrap replicate** $\hat\theta^*_b$ — the statistic (here a median) recomputed on the $b$-th
+  bootstrap sample.
+- **Bootstrap distribution** — the collection $\{\hat\theta^*_1, \dots, \hat\theta^*_B\}$ of replicates
+  across $B$ resamples; the bootstrap's approximation to the sampling distribution of $\hat\theta$.
+- **Bootstrap standard error** $\operatorname{SE}_{\text{boot}}(\hat\theta)$ — the standard deviation
+  of the bootstrap distribution; the bootstrap's estimate of how much $\hat\theta$ varies sample to
+  sample.
+- **Order statistic** $x_{(k)}$ — the $k$-th smallest value in a sample; the median is an order
+  statistic (or the average of two), which is *why* its bootstrap distribution is lumpy.
+- **Plug-in principle** — estimate a population quantity by computing the same quantity on $\hat F_n$;
+  the bootstrap is the plug-in principle applied to a *standard error*.
+
+## Concept development
+
+### From "draw new samples" to "resample the one you have"
+
+Imagine the ideal world. To learn how much the Express median varies, you would draw many fresh
+samples of $25$ Express waits from the *population* of all possible Express arrivals, compute the
+median of each, and look at how those medians spread. That spread *is* the sampling distribution of
+the median, and its standard deviation is the standard error you want. The catch is fatal in practice:
+you have exactly one sample of $25$, and the population is out of reach.
+
+The bootstrap's move is to substitute the **empirical distribution** $\hat F_n$ for the unknown
+population. $\hat F_n$ puts probability $1/25$ on each of your $25$ observed Express waits and nothing
+elsewhere — it is the best picture of the population you have, made entirely of data. Drawing a sample
+"from the population" then becomes drawing a sample *from the data*, and drawing from $\hat F_n$ is
+exactly **resampling with replacement**: each of the $25$ draws lands on one of your observed waits,
+uniformly at random, independently, so a value can recur. Each bootstrap sample is therefore a
+slightly reshuffled, re-weighted version of your data — some waits doubled, some missing.
+
+You then recompute the median on each bootstrap sample, collect those bootstrap medians, and read off
+their spread. **What is assumed:** that your one sample resembles the population well enough that
+$\hat F_n$ is a usable stand-in — that the observations are (roughly) independent and that the sample
+is large enough to carry the shape that matters. **What is resampled:** the rows of the data, with
+replacement, preserving nothing but the marginal distribution of waits. **What it protects against:**
+the need for a closed-form standard-error formula and the normality assumptions behind one. **What it
+cannot prove:** that $\hat F_n$ is the population — if the sample is small, weird, or dependent, the
+bootstrap inherits those flaws.
+
+### The bootstrap standard error of the Express median
+
+Take the recurring **Dataset W** slice: $n_T = 25$ Express waits in minutes, right-skewed, with a
+sample median of $12$ min (Week 1–2). To estimate how much that $12$ would wobble across samples, you
+resample the $25$ Express waits with replacement, recompute the median, and repeat — say $B = 10{,}000$
+times. The standard deviation of those $10{,}000$ bootstrap medians is the **bootstrap standard error
+of the Express median**, and for this slice it is
+
+$$
+\operatorname{SE}_{\text{boot}}(\tilde x_{\text{Express}}) \approx 1.2 \text{ min.}
+$$
+
+Read that in words: the Express median of $12$ min is uncertain by a little over a minute from sample
+to sample. It is *not* a margin of error or a confidence interval (those wait for Week 6); it is the
+typical wobble of the point estimate. **The assumption-ladder move:** you assumed the $25$ waits are an
+independent sample whose empirical distribution stands in for the population; you resampled the waits
+with replacement; this protected you from needing a median-specific standard-error formula (which would
+require knowing the density at the center); it cannot prove the estimate is unbiased or that $25$ waits
+capture the true tail.
+
+For the **difference in medians** — Express median minus Standard median, the observed effect
+$12 - 18 = -6$ min from Week 1 — you bootstrap *both* groups: resample the $25$ Express waits with
+replacement, resample the $25$ Standard waits with replacement, recompute the difference of the two
+sample medians, and repeat. The standard deviation of those differences is
+
+$$
+\operatorname{SE}_{\text{boot}}(\tilde x_{\text{Express}} - \tilde x_{\text{Standard}}) \approx 2.0 \text{ min.}
+$$
+
+That the difference's standard error ($\approx 2.0$) is larger than the single median's
+($\approx 1.2$) is no accident: a difference accumulates the sampling wobble of *two* medians, so its
+uncertainty is bigger than either one alone. Interpreted for the question: the Express-vs-Standard gap
+of $-6$ min carries a sample-to-sample wobble of about $2$ min, so the $-6$ is comfortably more than
+its own standard error away from zero — a foreshadowing of the Week 6 interval that excludes zero.
+**Assumption-ladder move:** you assumed each group's empirical distribution stands in for its
+population *and* that the two groups are independent (so you resample them separately); you resampled
+within each group with replacement; this protects against the unstable parametric standard error that
+the two long Standard waits would inflate; it cannot prove the two samples are free of the dependence
+or measurement quirks the design might carry.
+
+### Why the bootstrap distribution of the median is lumpy
+
+Here is the week's signature teaching point. When you bootstrap a **mean**, the bootstrap distribution
+looks smooth and roughly bell-shaped — averaging $25$ numbers produces a near-continuous spread of
+values. When you bootstrap a **median**, the bootstrap distribution is **lumpy / discrete**: it piles
+up on just a few distinct values, with visible gaps between them.
+
+The reason is that the median of a sample of $25$ is the $13$th order statistic, $x_{(13)}$ — one of
+the *actual observed values*. A bootstrap sample is built only from your $25$ original numbers, so its
+median can only ever *be* one of those original numbers (or, for even $n$, an average of two of them).
+There are at most $25$ possible answers, and in practice the median lands on the handful of values that
+sit near the center of the sorted data. So the bootstrap distribution of the median is a short picket
+fence of spikes — say at $11$, $12$, and $13$ minutes — rather than a smooth curve. As $n$ grows the
+fence gets finer, but for $n = 25$ the lumpiness is plainly visible.
+
+This matters for two reasons. First, it is **correct, not broken**: the sampling distribution of a
+sample median genuinely is more granular than that of a mean, and the bootstrap faithfully reflects
+that. Reporting a clean smooth curve for a median would be the lie. Second, it warns you that
+summaries built for smooth distributions can mislead here — a standard error of $1.2$ min is a useful
+one-number summary, but the underlying bootstrap distribution is discrete, so a *percentile* interval
+read off it (Week 6) will have visibly chunky endpoints, and methods that assume smoothness deserve
+caution. **Assumption-ladder move:** you assumed $\hat F_n$ stands in for the population; you resampled
+with replacement; the lumpiness protects you from *over-trusting* a too-smooth uncertainty picture for
+an order statistic; it cannot make the median's sampling distribution continuous — that granularity is
+real, and the most the bootstrap can do is show it honestly.
+
+## Worked examples
+
+### Worked example — bootstrapping the Express median (recurring Dataset W slice)
+
+**What is assumed.** You have $n_T = 25$ Express wait times in minutes (Dataset W; synthetic, seed
+set), right-skewed with a sample median of $12$ min. You assume the $25$ waits are an (approximately)
+independent sample whose empirical distribution $\hat F_n$ is a reasonable stand-in for the population
+of Express waits. You are *not* assuming normality, symmetry, or any closed-form for the median's
+sampling distribution.
+
+**The computation.** The static R below resamples the $25$ Express waits with replacement, recomputes
+the median each time, and summarizes the bootstrap distribution. It is shown as teaching code and is
+**not executed** here.
+
+```r
+set.seed(45203)
+
+# Synthetic Express wait times (minutes), Dataset W, n_T = 25, right-skewed.
+# (Shown as a small readable slice; sample median = 12 min.)
+express <- c(6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 12, 12,
+             13, 14, 15, 16, 17, 19, 19, 21, 24, 28, 33, 41)
+
+median(express)                       # observed Express median  -> 12 min
+
+# Bootstrap: resample WITH replacement from F-hat_n, recompute the median.
+B <- 10000
+boot_med <- replicate(B, {
+  resample <- sample(express, size = length(express), replace = TRUE)
+  median(resample)                    # median of one bootstrap sample
+})
+
+sd(boot_med)                          # bootstrap SE of the median  -> ~1.2 min
+table(boot_med)                       # LUMPY: only a few distinct values,
+                                      #   e.g. 11, 12, 13 dominate -> discrete
+
+# bootstrap SE(Express median) ~= 1.2 min ; distribution is lumpy/discrete
+```
+
+**The interpretation.** The bootstrap standard error of about $1.2$ min says the Express median of
+$12$ min would typically shift by a little over a minute if you could redraw the sample. The
+`table(boot_med)` line is the lesson: the bootstrap medians pile onto a few distinct order-statistic
+values (here near $11$, $12$, $13$), so the distribution is **lumpy / discrete**, not a smooth curve —
+exactly what an order statistic on $n = 25$ produces. **Assumption-ladder move:** assumed $\hat F_n$
+stands in for the population and the $25$ waits are independent; resampled the waits with replacement;
+protected against needing a density-dependent standard-error formula for the median; cannot prove the
+sample faithfully captures the true tail or that $25$ points is "enough."
+
+### Worked example — bootstrapping a trimmed mean of a small skewed sample (transfer, new context)
+
+**What is assumed.** Switch contexts entirely: a campus food pantry records the **dollar cost per
+visit** for a small, skewed batch of $12$ visits, with one unusually expensive restock visit dragging
+the upper tail. You want the **$10\%$ trimmed mean** — a robust center that drops the most extreme
+values before averaging — and you want to know how uncertain it is. You assume the $12$ visits are an
+independent sample and that $\hat F_n$ for these $12$ costs is a usable, if rough, stand-in for the
+population of visit costs. (Numbers here are illustrative and distinct from Dataset W.)
+
+**The computation.** No textbook formula gives the standard error of a $10\%$ trimmed mean for a skewed
+$n = 12$ sample — so you bootstrap it, exactly as you bootstrapped the median.
+
+```r
+set.seed(45203)
+
+# Synthetic food-pantry cost-per-visit ($), n = 12, right-skewed (one big visit).
+cost <- c(8, 9, 10, 11, 12, 12, 13, 15, 18, 22, 27, 60)
+
+mean(cost, trim = 0.10)               # observed 10% trimmed mean (illustrative)
+
+B <- 10000
+boot_trim <- replicate(B, {
+  resample <- sample(cost, size = length(cost), replace = TRUE)
+  mean(resample, trim = 0.10)         # trimmed mean of one bootstrap sample
+})
+
+sd(boot_trim)                         # bootstrap SE of the trimmed mean
+# the trimmed-mean bootstrap distribution is less lumpy than the median's
+# (it averages several middle values) but still not perfectly smooth at n = 12
+```
+
+**The interpretation.** The bootstrap gives a standard error for a statistic that has no convenient
+formula, in a brand-new context, using the identical machinery — *resample with replacement, recompute,
+read the spread*. Two things transfer and one thing changes. What transfers: the plug-in logic
+(estimate the standard error by computing it on $\hat F_n$) and the honesty about assumptions. What
+changes: a $10\%$ trimmed mean averages several middle values, so its bootstrap distribution is
+**less lumpy** than the median's — but with only $n = 12$ it is still not perfectly smooth, and the
+single $\$60$ visit, even after trimming, makes the small-sample bootstrap shaky. **Assumption-ladder
+move:** assumed $\hat F_n$ for $12$ costs stands in for the population and the visits are independent;
+resampled the costs with replacement; protected against having no analytic standard error for a robust
+estimator; cannot prove that $12$ skewed observations are enough for the bootstrap to be trustworthy —
+small $n$ is precisely where it is weakest.
+
+## A common mistake
+
+This week's classic error comes in two braided forms — **resampling the wrong unit (Risk 3)** and
+**treating the bootstrap as assumption-free (Risk 4)** — and both spring from forgetting what the
+bootstrap actually assumes.
+
+The **wrong-unit** mistake is resampling rows that are not the independent unit of the design. Suppose
+each Express patient contributed *three* wait times across three visits, and you bootstrap all the
+individual wait times as if they were $75$ independent observations. They are not: the three waits from
+one patient are correlated, so the *patient* is the independent unit, and you must resample **patients**
+(carrying their three waits along), not individual rows. Resampling the wrong unit treats dependent
+observations as independent and **understates the standard error** — the bootstrap will report a
+falsely precise median. The fix is the assumption-ladder's first rung: name the unit the design treats
+as independent, and resample *that* unit. The bootstrap preserves only the structure you resample at;
+if you resample rows, you have assumed independent rows, whether you meant to or not.
+
+The **assumption-free** mistake is the belief that, because the bootstrap uses "no formula," it makes
+"no assumptions." It makes a big one: that your sample resembles the population well enough for
+$\hat F_n$ to stand in for it. When that fails, the bootstrap fails — quietly. The textbook failure is
+an **extreme order statistic** like the sample maximum: a bootstrap sample can never contain a value
+*larger* than the largest one you observed, so the bootstrap cannot see past your sample maximum and
+**badly understates** the uncertainty of the maximum (you will meet this failure case head-on in Week
+6). Very **small $n$** and **dependent data** are the other two classic breakers. So the bootstrap is
+*assumption-light* — it drops normality and the closed-form formula — but it is never
+*assumption-free*: it still assumes the sample is a faithful, independent picture of the population, and
+when that assumption is wrong, the comfortable-looking standard error is wrong with it. The bootstrap
+**estimates** sampling variability; it does not **guarantee** it.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence, explain why "resample with replacement from the data" is the same operation as
+   "draw a sample from the empirical distribution $\hat F_n$."
+2. The bootstrap standard error of the Express median is about $1.2$ min, and of the difference in
+   medians about $2.0$ min. Without computing anything, say why the difference's standard error is the
+   larger of the two.
+3. A classmate bootstraps the Express *mean* and gets a smooth, bell-shaped bootstrap distribution,
+   then bootstraps the Express *median* and gets a few tall spikes with gaps. Explain why the median's
+   distribution is lumpy and the mean's is not — and which one is "wrong."
+4. Each of $20$ tutoring centers reports wait times for $30$ of its students. A teammate bootstraps all
+   $600$ student waits as one pool to get the standard error of the median wait. Name the unit error and
+   say which direction it pushes the reported standard error.
+5. Explain, in your own words, the difference between what a *permutation test* (Week 3) and a
+   *bootstrap* (this week) are each trying to estimate, even though both resample.
+6. Why can a bootstrap never produce a resample whose maximum exceeds the original sample's maximum, and
+   what does that imply about bootstrapping the maximum?
+
+## Reading and source pointer
+
+This week is grounded in the instructor notes (the primary course materials) for the bootstrap and the
+empirical distribution, with the **IMS** (Çetinkaya-Rundel & Hardin) treatment of **bootstrapping for
+the sampling distribution of a statistic** for the concept and sequence, and the **ModernDive** (Ismay,
+Kim & Valdivia) **bootstrap workflow** (the `infer` verbs: specify → generate → calculate) for the
+companion lab you will build in `lab-05`. *These notes are the course's own synthesis, grounded in but
+not copied from the sources.* No prose, examples, exercises, figures, or solutions are reproduced from
+any source.
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value here is
+**drafted, synthetic, and not independently checked** — the load-bearing ones are the Express median
+($12$ min), its bootstrap standard error ($\approx 1.2$ min), the difference-in-medians bootstrap
+standard error ($\approx 2.0$ min), and the qualitative claim that the median's bootstrap distribution
+is lumpy / discrete (piling onto a few order-statistic values), together with the illustrative
+food-pantry trimmed-mean transfer numbers. All example data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we take this same bootstrap machinery and turn the standard error into a **confidence
+interval** for the difference in medians — a **percentile** $95\%$ interval of about $(-10, -2)$ min
+that excludes zero — and we meet the **basic** and **BCa** intervals, which can disagree under skew
+because BCa corrects for bias and skew. We also confront the bootstrap's headline failure case head-on:
+a bootstrap interval for the sample **maximum** is unreliable, because the bootstrap can never resample
+beyond the largest value it has seen. Same engine, a sharper claim — and a clear-eyed look at where the
+engine stalls.
+
+## See also
+
+- [Week 4 — Randomization tests](week-04-randomization-tests.qmd) — the other resampling tool; shuffle
+  labels to test a null, versus resample to estimate variability.
+- [Week 6 — Bootstrap confidence intervals](week-06-bootstrap-confidence-intervals.qmd) — turn this SE
+  into a percentile / BCa interval, and meet the maximum failure case.
+- [Lab 5 — Bootstrap the median](../labs/lab-05-bootstrap-the-median.qmd) — resample with replacement,
+  see the lumpy median distribution, estimate the SE.
+- [Methods glossary](../resources/methods-glossary.qmd) — empirical distribution, bootstrap sample,
+  bootstrap SE, order statistic.
+- [Resampling guide](../resources/resampling-guide.qmd) — permutation vs bootstrap, side by side.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide.

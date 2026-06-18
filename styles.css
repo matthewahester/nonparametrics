@@ -1,0 +1,157 @@
+/* =============================================================
+   Matt course-site shell — reusable course-family styles
+   -------------------------------------------------------------
+   Shared theme with matthewhester.com / intro-stats / math-software /
+   bayesian-statistics / intro-probability / statistical-inference: the
+   same stone / crystal / iron palette and a black ("stone-900") top
+   navbar, so every course site feels like one family.
+
+   Design rules:
+     - Quarto + Bootstrap (cosmo) handle layout. We only tune colors,
+       type, and a few component edges.
+     - No JS, no SCSS — plain CSS only.
+     - One accent color (iron). Used sparingly.
+     - Self-contained: tokens are local so a course may drift if needed
+       (e.g. diagram-heavy panels for a study-design course).
+   ============================================================= */
+
+/* Color tokens — same family across the course sites. */
+:root {
+  --stone-50:  #f6f5f3;
+  --stone-100: #ecebe7;
+  --stone-200: #d8d6d0;
+  --stone-400: #8a8780;
+  --stone-700: #3a3935;
+  --stone-900: #1c1b19;
+  --crystal-blue: #5b7a8c;
+  --iron-accent:  #8a4a2b;
+  --radius-card:  8px;
+}
+
+body {
+  background-color: var(--stone-50);
+  color: var(--stone-700);
+  line-height: 1.65;
+}
+
+h1, h2, h3, h4 {
+  color: var(--stone-900);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--iron-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease;
+}
+a:hover {
+  border-bottom-color: var(--iron-accent);
+}
+
+/* Navbar — stone-on-stone (black top bar), the family signature. */
+.navbar {
+  background-color: var(--stone-900) !important;
+  border-bottom: 1px solid var(--stone-200);
+}
+.navbar .navbar-brand,
+.navbar .nav-link {
+  color: var(--stone-50) !important;
+  font-weight: 500;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  color: #ffffff !important;
+}
+
+/* Course crystal mark — small brand icon left of the title.
+   Optional: only shows when a logo asset is set in _quarto.yml. */
+.navbar-logo {
+  max-height: 1.5rem;
+  width: auto;
+}
+.navbar-brand .navbar-logo {
+  margin-right: 0.35rem;
+}
+
+/* Sidebar — quiet, with the active item in iron.
+   NOTE on the active selector: current Quarto (verified on 1.8.26) puts
+   `active` DIRECTLY on the sidebar link
+   (`<a class="sidebar-item-text sidebar-link active">`), with no
+   `.sidebar-item.active` ancestor — so the older direct-child chain AND a
+   plain `.sidebar-item.active …` descendant selector both fail to match.
+   We target `active` on the link itself and keep the legacy descendant
+   form as a fallback for older rendered DOMs. See docs/08 §8. */
+.sidebar-title {
+  color: var(--stone-900);
+  font-weight: 600;
+}
+.sidebar-item .sidebar-item-text {
+  color: var(--stone-700);
+}
+.sidebar-item .sidebar-link.active,
+.sidebar-item .sidebar-item-text.active,
+.sidebar-item.active .sidebar-item-text {
+  color: var(--iron-accent);
+  font-weight: 600;
+}
+
+/* Code blocks — neutral panel; inline code stays light to keep prose
+   quiet. A code-bearing course may thicken the left rule locally. */
+pre {
+  background-color: var(--stone-100);
+  border: 1px solid var(--stone-200);
+  border-left: 3px solid var(--crystal-blue);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 1rem;
+}
+
+code {
+  background-color: var(--stone-100);
+  color: var(--stone-900);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* A landing page that sets `pagetitle` (not `title`) emits an empty
+   title block; hide only the empty one so a hero sits flush at the top.
+   Populated title blocks on other pages are unaffected. */
+#title-block-header:empty {
+  display: none;
+}
+
+/* Course landing hero image — sizes/space only; the image carries its
+   own framing. */
+.course-hero-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 1.75rem 0;
+  border-radius: 0.5rem;
+}
+
+/* Misc */
+blockquote {
+  border-left: 3px solid var(--crystal-blue);
+  background-color: var(--stone-100);
+  color: var(--stone-700);
+  padding: 0.5rem 1rem;
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+}
+
+/* Wide display math — long aligned derivations, factorial-effect tables,
+   and causal-diagram adjacency tables can be wider than the content
+   column on narrow screens. Let a single display equation scroll
+   horizontally inside its own box instead of forcing the whole page to
+   overflow or clipping the formula. Inline math is unaffected.
+   Selectors cover both Quarto's pre-typeset `.math.display` wrapper and
+   MathJax's typeset CHTML container, so it holds whether MathJax runs
+   client-side or not. See docs/08 §4. */
+.math.display,
+mjx-container[jax="CHTML"][display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}

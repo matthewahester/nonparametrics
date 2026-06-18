@@ -1,0 +1,42 @@
+---
+title: "Resources"
+subtitle: "Reference pages to keep open while you read"
+page-type: orientation
+toc: true
+---
+
+These four pages are the course's reference shelf. They do not introduce new material; they collect, in one
+place, the vocabulary and the decision logic that recur across the weekly notes, so you can look something up
+quickly and keep the assumption-ladder discipline in view. Keep them open in a second tab while you read the
+notes and work the labs.
+
+## The four resources
+
+- [**Methods glossary**](methods-glossary.qmd) — the vocabulary used across the course, organized by theme:
+  empirical distributions and ranks; permutation and the bootstrap; rank-based tests; robust summaries and
+  regression; and the method-comparison vocabulary (Type I error, power, coverage, breakdown point). Start here
+  when a term is unfamiliar.
+
+- [**Method chooser (decision guide)**](method-chooser.qmd) — a walk from a *data shape and a question* to a
+  *defensible method*. It is deliberately not a flowchart that picks "the" test; it lays out the candidates,
+  what each assumes, and what each protects against, so you can choose for a purpose and say why.
+
+- [**Resampling guide (permutation vs bootstrap)**](resampling-guide.qmd) — the two resampling engines laid side
+  by side: what is held fixed and what moves, what each is *for* (testing a null vs estimating uncertainty), and
+  the failure cases of each. The single most useful page for keeping "shuffle to test" and "resample to
+  estimate" straight.
+
+- [**Robustness & outliers guide**](robustness-and-outliers-guide.qmd) — resistant summaries (median, trimmed
+  mean, MAD), the breakdown point, the difference between an outlier, high leverage, and an influential point,
+  and the rule that runs through the course: *investigate, do not auto-delete.*
+
+## A reminder about the numbers
+
+Every numeric value mentioned on these pages comes from the course's synthetic **Riverside Wellness** datasets
+(seed set) and is **provisional pending review** — this is a draft course site. Use the resources for the
+vocabulary and the reasoning, not as a table of certified results.
+
+## Public vs. graded
+
+These resource pages are **public and ungraded** — study reference only. For graded specifics — deadlines,
+submissions, and policies — **Blackboard (the LMS) is authoritative**.

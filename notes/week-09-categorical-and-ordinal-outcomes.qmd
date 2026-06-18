@@ -1,0 +1,358 @@
+---
+title: "Week 9 — Categorical and ordinal outcomes"
+subtitle: "How to respect the measurement scale of an ordered categorical outcome"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "IMS (Çetinkaya-Rundel & Hardin), inference for categorical data — supports the chi-square test; Nonparametric Statistical Methods (Hollander, Wolfe & Chicken), ordinal methods — optional advanced reference (NAMED/CITED ONLY)"
+toc: true
+---
+
+## The week question
+
+Suppose every participant in two program arms rates their satisfaction on a five-point scale — $1$
+(very dissatisfied) through $5$ (very satisfied) — and you want to know whether one arm is rated
+more favorably than the other. The scale is **ordered**: a $4$ is more satisfied than a $3$, which is
+more satisfied than a $2$. But it is not **numeric** in the usual sense — the gap from $1$ to $2$ is
+not guaranteed to be the same "amount of satisfaction" as the gap from $4$ to $5$. This week's
+question is narrow and load-bearing: **how do you compare two groups on an ordered categorical
+outcome in a way that uses the ordering but does not pretend the labels are equally-spaced
+numbers?** The answer turns on respecting the **measurement scale** — neither throwing the order away
+nor inventing arithmetic the scale cannot support.
+
+## Why this matters
+
+Ordinal outcomes are everywhere in applied work: Likert satisfaction items, pain scales, agree–
+disagree survey responses, tumor grades, letter ratings. They sit in an awkward middle. They carry
+**more** information than a bare set of unordered categories (the order is real and meaningful), but
+**less** than a measured quantity (the spacing between adjacent levels is not known). Two opposite
+mistakes follow from forgetting which middle you are in, and this week is built to keep you out of
+both.
+
+The first mistake is to **over-claim**: assign codes $1, 2, 3, 4, 5$, take a mean, and run a $t$-test
+as if satisfaction were a temperature. The mean of ordinal codes can look clean and decisive, but it
+silently assumes the levels are evenly spaced — that moving someone from "dissatisfied" to "neutral"
+is exactly as much change as moving them from "satisfied" to "very satisfied." You usually have no
+basis for that, and the mean can be moved around just by relabeling the categories. The second
+mistake is to **under-claim**: notice that the data are categorical and reach for a plain chi-square
+test of independence, which treats the five ordered levels as five interchangeable, **unordered**
+buckets. That throws away the very ordering that makes the comparison interesting, and it costs you
+power — it can fail to detect a clear shift toward higher satisfaction that an ordinal method sees
+easily.
+
+The course's discipline applies directly. An ordinal comparison is **assumption-light** — it does not
+need normality or equal spacing — but it is **not assumption-free**. A rank-based ordinal test
+assumes only that the categories are *ordered* and that, under the null, the two arms are
+exchangeable; in exchange it protects you against the spacing fiction and against heavy-tailed code
+arithmetic. What it cannot do is estimate "how many points higher" one arm is, because the scale has
+no points to count. Naming that trade — every time — is the week's whole job.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Distinguish a **nominal** categorical outcome (unordered categories) from an **ordinal** one
+  (ordered categories), and say why the distinction changes the right analysis.
+- Explain why **averaging ordinal codes** assumes equal spacing the scale does not guarantee, and why
+  the median category and the rank distribution are safer summaries.
+- Compare two arms on an ordinal outcome with a **rank-based (Mann–Whitney) test using mid-ranks for
+  ties**, and read the result as a **probability of superiority**, not a difference in means.
+- Explain why a **nominal chi-square test of independence** ignores the ordering, and why an **ordinal
+  / trend test** that uses the ordering is more powerful when the effect is a shift in one direction.
+- For every result, name the assumption-ladder move: what is assumed, what is ranked, what it protects
+  against, and what it cannot prove.
+
+## Core vocabulary
+
+- **Categorical outcome** — a response that falls into discrete categories rather than taking a
+  numeric measurement.
+- **Nominal scale** — categories with **no inherent order** (e.g. clinic site A/B/C); only equality of
+  labels is meaningful.
+- **Ordinal scale** — categories with a **meaningful order** but **unknown spacing** (e.g. a $1$–$5$
+  satisfaction Likert item); "$4 > 3$" is meaningful, "$4 - 3 = 1$ unit" is not.
+- **Likert item** — a single ordered rating item, here program satisfaction on $1$–$5$.
+- **Median category** — the category at which the cumulative count reaches half; a resistant ordinal
+  center that needs no spacing assumption.
+- **Mean of the codes** — the arithmetic mean of the numeric labels; *looks* like a clean summary but
+  **assumes equal spacing**, so it is questionable for an ordinal scale.
+- **Mid-ranks** — the average rank assigned to tied observations; how a rank test handles the many ties
+  that an ordinal scale produces (every person at level $4$ ties with every other person at level $4$).
+- **Mann–Whitney / Wilcoxon rank-sum test** — a two-sample rank test; on an ordinal outcome it asks
+  whether ratings in one arm tend to **outrank** ratings in the other.
+- **Probability of superiority** $P(X > Y)$ — the chance a randomly chosen rating from one arm exceeds
+  one from the other; the natural effect summary for an ordinal comparison.
+- **Chi-square test of independence ($\chi^2$)** — a **nominal** test of whether row (arm) and column
+  (category) are associated; uses the counts but **ignores the column ordering**.
+- **Ordinal / trend test** — a test that uses the column ordering (ranks or assigned scores) to detect
+  a monotone shift; more powerful than the nominal $\chi^2$ when the effect is directional.
+
+## Concept development
+
+### Nominal versus ordinal: the same counts, two different questions
+
+Start with the contrast that organizes the week. A **nominal** outcome has categories you could shuffle
+into any order without losing meaning — clinic site, blood type, intake channel. An **ordinal** outcome
+has categories that come in a fixed, meaningful sequence — and the sequence is information. Satisfaction
+rated $1$–$5$ is ordinal: "very satisfied" sits above "satisfied," which sits above "neutral." If you
+permuted those five labels, you would destroy something real.
+
+The practical consequence is that an ordinal outcome supports a question a nominal one does not. For a
+nominal outcome you can only ask **"is the distribution across categories associated with the arm?"** —
+a question about *any* difference in the category proportions. For an ordinal outcome you can ask the
+sharper, usually more interesting question: **"does one arm tend toward the higher categories?"** — a
+question about *direction*. Choosing a method that can only answer the first question, when the second
+is what you care about, is the classic under-claiming error of this week.
+
+A useful way to hold the distinction: a nominal test treats the five satisfaction levels as five flags
+of different colors and asks whether the color mix differs by arm. An ordinal test treats them as five
+rungs of a ladder and asks whether one arm stands higher on the ladder. The counts are identical; the
+question — and therefore the right machinery — is not.
+
+### Why averaging the codes over-claims
+
+The tempting shortcut is to code the levels $1, 2, 3, 4, 5$, average them per arm, and compare. For
+the recurring satisfaction data (Dataset L) this gives a mean of about $4.12$ for the Express arm and
+$3.38$ for the Standard arm — a clean-looking gap of about $0.74$ "points." The problem is hidden in
+the word *points*. Taking that mean treats the codes as a genuine measurement on an interval scale,
+which assumes the step from $1$ to $2$ represents the **same** increment of satisfaction as the step
+from $4$ to $5$. The scale gives you no warrant for that. If a colleague recoded the levels as
+$1, 2, 3, 4, 10$ — still a perfectly valid *ordering* — the means would change completely, even though
+not a single participant changed their rating. A summary that depends on an arbitrary spacing choice is
+not measuring the thing you care about.
+
+The **median category** avoids the trap. It is the level at which the cumulative count crosses half,
+and it depends only on the **order** of the levels, not on any assigned spacing. For Dataset L the
+median category is $4$ for the Express arm and $3$ for the Standard arm — the same directional story as
+the means, told without the spacing fiction. The assumption-ladder reading: the median category
+**assumes** only that the levels are ordered, **uses** the ordering (not the spacing), **protects
+against** the relabeling instability that sinks the mean, and **cannot prove** "how much" higher one
+arm is, because the scale supplies no distance to measure.
+
+### Using the order without inventing spacing: ranks and the trend test
+
+The honest middle path is to use the **order** while refusing to invent **spacing**. Ranks do exactly
+that. Pool all ratings from both arms, rank them from lowest to highest, and — because an ordinal scale
+produces massive ties (everyone at level $4$ is tied) — assign **mid-ranks** to the ties: every
+observation in a tied group gets the average of the ranks that group spans. Then ask whether the
+Express arm's ratings carry systematically higher ranks than the Standard arm's. This is the
+**Mann–Whitney / Wilcoxon rank-sum** test applied to the ordinal scores, and its effect summary is the
+**probability of superiority** $P(\text{Express} > \text{Standard})$.
+
+For Dataset L the rank-sum test (mid-ranks for ties) gives $p \approx 0.01$, and the probability that a
+randomly chosen Express rating exceeds a randomly chosen Standard rating is $P(\text{Express} >
+\text{Standard}) \approx 0.66$. Read that directly: pick one person from each arm at random, and about
+two times in three the Express person is the more satisfied of the pair. That is a statement the scale
+**can** support, because it depends only on the order "$>$," never on a spacing.
+
+Now the load-bearing contrast. You could instead build a $5 \times 2$ table of counts and run a plain
+**chi-square test of independence**. For Dataset L that gives $\chi^2 \approx 9.9$ on $4$ degrees of
+freedom, $p \approx 0.04$. Significant — but notice what the $\chi^2$ did and did not use. It compared
+the **whole shape** of the two category distributions and would have given the *same* statistic if you
+scrambled the column order, because it treats the five levels as **unordered**. It spends its degrees
+of freedom detecting *any* difference in the proportions, directional or not. The **ordinal / trend
+test** (the rank-based test above) instead concentrates its power on the one question that matters here
+— *is there a shift toward higher satisfaction?* — and so it sees the effect more sharply: $p \approx
+0.01$ versus the nominal $0.04$.
+
+The assumption-ladder reading for the rank/trend test: it **assumes** the categories are ordered and,
+under the null, the two arms are exchangeable; it **uses (ranks)** the ordering of the levels; it
+**protects against** both the spacing fiction of the mean and the order-blindness of the nominal
+$\chi^2$; and it **cannot prove** a mean difference or a causal mechanism — only that, in these data,
+Express ratings tend to outrank Standard ratings. Assumption-light, not assumption-free: the
+exchangeability-under-the-null assumption is still doing real work.
+
+## Worked examples
+
+### Worked example — program satisfaction by arm (recurring slice, Dataset L)
+
+**What is assumed.** Two arms of $n = 50$ each rate program satisfaction on an ordered $1$–$5$ Likert
+scale. We assume the five levels are genuinely **ordered** (a $5$ is more satisfied than a $4$, and so
+on) but make **no** assumption that the levels are equally spaced, and **no** normality assumption. Data
+are synthetic; seed set.
+
+The counts across categories $1$–$5$:
+
+| Arm | 1 | 2 | 3 | 4 | 5 | $n$ |
+|----------|---:|---:|---:|---:|---:|----:|
+| Express  | 1 | 2 | 7 | 20 | 20 | 50 |
+| Standard | 3 | 8 | 16 | 13 | 10 | 50 |
+
+**Computation.** The static R below tabulates the two arms, computes the (questionable) code means and
+the (safe) median categories, runs the rank-sum test with mid-ranks, and runs the nominal chi-square so
+you can see the two answers side by side. It is shown as teaching code and is **not executed** here.
+
+```r
+set.seed(45203)
+
+# Dataset L: satisfaction Likert 1-5 by arm (synthetic; seed set).
+express  <- rep(1:5, times = c(1, 2, 7, 20, 20))   # n = 50
+standard <- rep(1:5, times = c(3, 8, 16, 13, 10))  # n = 50
+
+# (1) Mean of the codes -- LOOKS clean, but assumes equal spacing (questionable).
+mean(express)    # ~ 4.12
+mean(standard)   # ~ 3.38
+
+# (2) Median category -- depends only on ORDER, not spacing (safe summary).
+median(express)  # 4
+median(standard) # 3
+
+# (3) Rank-based / ordinal: Mann-Whitney on the scores, mid-ranks for ties.
+wilcox.test(express, standard)          # rank-sum p ~ 0.01
+# Probability of superiority P(Express > Standard) ~ 0.66
+#   (a random Express rating outranks a random Standard rating ~2/3 of the time)
+
+# (4) NOMINAL chi-square of independence -- IGNORES the ordering of 1..5.
+tab <- rbind(express = c(1, 2, 7, 20, 20),
+             standard = c(3, 8, 16, 13, 10))
+chisq.test(tab)                          # chi^2 ~ 9.9, df = 4, p ~ 0.04
+
+# Side by side:
+#   mean codes 4.12 vs 3.38 (questionable: assumes equal spacing)
+#   median category 4 vs 3  (safe)
+#   rank-sum (USES order)   p ~ 0.01,  P(Express > Standard) ~ 0.66
+#   nominal chi-square (IGNORES order) chi^2 ~ 9.9, df = 4, p ~ 0.04
+```
+
+**Interpretation.** Every summary points the same direction — Express is rated more favorably — but
+they are not equally trustworthy. The **code means** $4.12$ versus $3.38$ look like a tidy $0.74$-point
+gap, yet that number rests on the equal-spacing fiction and would change if the levels were recoded; do
+not report it as "Express is $0.74$ points more satisfied." The **median categories** $4$ versus $3$
+carry the same directional story honestly, using only the order. The **rank-sum** test ($p \approx
+0.01$) is the right confirmatory tool: it uses the ordering, handles the ties with mid-ranks, and
+yields the effect summary the scale can support — $P(\text{Express} > \text{Standard}) \approx 0.66$,
+so a random Express respondent outranks a random Standard respondent about two times in three. The
+**nominal $\chi^2$** ($\approx 9.9$, $4$ df, $p \approx 0.04$) is also significant but *weaker*, because
+it throws away the ordering and spends its degrees of freedom looking for any difference in shape rather
+than the directional shift that is actually present. Assumption-ladder: the rank test **assumes** order
+and null-exchangeability, **ranks** the levels, **protects against** the spacing fiction and the
+order-blindness of $\chi^2$, and **cannot prove** a numeric "amount" of difference or a cause.
+
+### Worked example — an agree–disagree policy item (transfer, new context)
+
+**What is assumed.** A campus office pilots a new advising-appointment system and asks two cohorts of
+students to respond to a single statement — *"The new system made scheduling easier"* — on an ordered
+five-level item: Strongly disagree, Disagree, Neutral, Agree, Strongly agree. This is a different
+context from the satisfaction data, but the **measurement scale is the same shape**: ordered, with
+unknown spacing. We assume the five levels are ordered and make no equal-spacing or normality
+assumption. Numbers here are illustrative and distinct from Dataset L.
+
+**Computation.** Suppose the **new-system** cohort responds with counts $[2, 5, 8, 25, 10]$ across the
+five levels (Strongly disagree → Strongly agree) and the **old-system** cohort with $[6, 12, 14, 13,
+5]$. As with the satisfaction item you have three roads:
+
+- **Average the codes** $1$–$5$: this would again produce a clean-looking mean gap — and again rest on
+  the equal-spacing assumption that "Disagree → Neutral" is the same increment as "Agree → Strongly
+  agree." Resist it; the agree–disagree scale gives no warrant for that distance.
+- **Compare median categories**: the new-system cohort's median lands at *Agree*, the old-system
+  cohort's near *Neutral* — an honest, order-only summary of the directional difference.
+- **Run the rank-based ordinal test** (Mann–Whitney with mid-ranks): this asks whether new-system
+  responses tend to outrank old-system responses, and reports a probability of superiority
+  $P(\text{new} > \text{old})$ — the response that respects the scale.
+
+A nominal $\chi^2$ of independence on the $5 \times 2$ table is available too, but — exactly as in the
+satisfaction example — it would treat *Strongly disagree* and *Strongly agree* as interchangeable,
+unordered buckets and ignore the very direction the office cares about.
+
+**Interpretation.** The **design move is identical** to the recurring slice — respect the ordinal scale,
+prefer the median category and the rank-based test, and read the result as a probability of superiority
+rather than a difference in means — only the context (advising scheduling, not clinic satisfaction) and
+the numbers differ. Because the new-system responses tend toward *Agree* and *Strongly agree* while the
+old-system responses cluster nearer *Neutral*, the ordinal test would detect a directional shift that
+the nominal $\chi^2$ would only partly capture. And as always: the ordinal test **assumes** the levels
+are ordered and exchangeable under the null, **uses** that ordering, **protects against** the spacing
+fiction, and **cannot prove** that the new system *caused* the more favorable responses — assignment and
+context, not the rank test, would be needed for that.
+
+## A common mistake
+
+The week's classic error comes in two braided forms — **averaging ordinal labels** (Risk 8) and **using
+a nominal chi-square that discards order** (Risk 9). They are opposite failures of the same root cause:
+not respecting the measurement scale.
+
+The **averaging** form sounds like: "Express averaged $4.12$ and Standard averaged $3.38$, so Express is
+$0.74$ points more satisfied." The trouble is that "$0.74$ points" is not a thing the scale measures. A
+mean of the codes treats $1, 2, 3, 4, 5$ as equally-spaced numeric values, which assumes — with no
+justification from the instrument — that every adjacent step represents the same amount of satisfaction.
+Recode the top level from $5$ to $10$ (still a valid ordering) and the means lurch, though not one
+participant changed their answer. A summary that moves when you relabel the categories is measuring the
+labels, not the satisfaction. **Fix:** summarize with the **median category** (which uses only the
+order) and test with a **rank-based ordinal test** (which uses the order through ranks and mid-ranks),
+and report the **probability of superiority** rather than a fictitious point difference.
+
+The **order-discarding** form sounds like: "It's categorical, so I ran a chi-square test of
+independence, got $\chi^2 \approx 9.9$ on $4$ df, $p \approx 0.04$, and reported it." That is not wrong,
+exactly — it is *wasteful*. The nominal $\chi^2$ treats the five **ordered** levels as five **unordered**
+buckets; it would return the identical statistic if you scrambled the column order, because it cannot
+see that $5 > 4 > 3 > 2 > 1$. By ignoring the direction, it spreads its power across "any difference in
+shape" and so detects a clear directional shift less sharply than a method built for direction. Here the
+cost is visible: the order-aware rank/trend test reaches $p \approx 0.01$ where the order-blind $\chi^2$
+manages only $p \approx 0.04$. **Fix:** when the categories are ordered and you expect a directional
+effect, use the **ordering** — a rank-sum / ordinal trend test — and reserve the nominal $\chi^2$ for
+genuinely **unordered** categories.
+
+Both fixes are the same rule stated twice: **respect the scale.** Do not invent spacing the scale lacks;
+do not discard order the scale supplies.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence, say why "Express is $0.74$ points more satisfied than Standard" is an over-claim,
+   and give the order-only summary you would report instead.
+2. A classmate runs a nominal chi-square on the satisfaction table and concludes there is "an
+   association." What stronger, more useful question could an ordinal test answer that the chi-square
+   cannot, and why is the chi-square's $p \approx 0.04$ less sharp than the ordinal $p \approx 0.01$?
+3. Explain in your own words what **mid-ranks** do, and why an ordinal Likert outcome makes them
+   unavoidable.
+4. Interpret $P(\text{Express} > \text{Standard}) \approx 0.66$ for someone who has never taken
+   statistics — without using the words "mean" or "average."
+5. Someone recodes the top satisfaction level from $5$ to $10$ and reports that the mean gap "grew."
+   Which two summaries on this page are *unchanged* by that recoding, and why does their stability make
+   them safer for an ordinal scale?
+
+## Reading and source pointer
+
+This week is grounded in the instructor notes (the primary course materials) for ordinal and
+categorical comparison, with the **IMS** (Çetinkaya-Rundel & Hardin) treatment of **inference for
+categorical data** for the chi-square test of independence and its vocabulary, and — as an optional
+advanced pointer only — the **Nonparametric Statistical Methods** text (Hollander, Wolfe & Chicken) for
+the classical **ordinal-methods** vocabulary (rank-based two-sample and trend procedures). That text is
+**named and cited only**; no prose, tables, examples, exercises, figures, solutions, or notation are
+reproduced from it or from any source. *These notes are the course's own synthesis, grounded in but not
+copied from the sources.*
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value here is
+**drafted, synthetic, and not independently checked.** The load-bearing numbers are the Dataset L counts
+(Express $[1, 2, 7, 20, 20]$, Standard $[3, 8, 16, 13, 10]$), the median categories ($4$ for Express, $3$
+for Standard), the code means ($\approx 4.12$ and $\approx 3.38$, flagged as questionable), the
+rank-sum result ($p \approx 0.01$) with the probability of superiority $P(\text{Express} >
+\text{Standard}) \approx 0.66$, and the nominal chi-square ($\chi^2 \approx 9.9$, $4$ df, $p \approx
+0.04$), together with the illustrative agree–disagree transfer counts. All example data are synthetic
+with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we leave ordered categories behind and turn to **robust summaries and outliers** on a measured
+outcome (Dataset D — wellbeing gain against sessions attended). The motivating tension is the mirror
+image of this week's: there, a single contaminating point can wreck the **mean** and the ordinary
+**SD**, and the cure is again to lean on **resistant** summaries — the median, the trimmed mean, and the
+MAD — and to flag rather than silently delete the outlier. The connecting idea carries straight over:
+match the summary to what the data — and the scale — can actually support.
+
+## See also
+
+- [Week 8 — Two-sample rank methods](week-08-two-sample-rank-methods.qmd) — the rank-sum / Mann–Whitney
+  machinery and the probability of superiority, here applied to an ordinal outcome.
+- [Week 10 — Robust summaries and outliers](week-10-robust-summaries-and-outliers.qmd) — resistant
+  summaries for a measured outcome with contamination.
+- [Methods glossary](../resources/methods-glossary.qmd) — ordinal vs nominal, mid-ranks, probability of
+  superiority, chi-square of independence.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide: which test
+  for which scale and question.

@@ -1,0 +1,374 @@
+---
+title: "Week 11 — Robust regression ideas"
+subtitle: "Why least squares breaks under contamination, and how robust fits hold"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "ModernDive (Ismay, Kim & Valdivia), regression in R — supports the companion lab; Nonparametric Statistical Methods (Hollander, Wolfe & Chicken), robust-fit vocabulary — optional advanced reference (NAMED/CITED ONLY)"
+toc: true
+---
+
+## The week question
+
+Last week you saw a single far-out point inflate a standard deviation and drag a mean off the
+center of the data. This week you give the data an $x$-axis and try to fit a *line*, and the same
+fragility returns in a sharper form. A regression line is a summary too — the conditional center of
+$y$ as $x$ moves — and least squares builds that summary by minimizing **squared** residuals, so a
+single contaminated point can bend the whole line toward itself. This week's question is narrow and
+load-bearing: **why does ordinary least squares break under contamination, and what does a robust
+fit do differently so that it holds?** The answer is not "delete the bad point and refit." It is to
+understand which points move which fit, and to choose an estimator whose logic *downweights* an
+extreme observation instead of letting it dominate.
+
+## Why this matters
+
+Real data are rarely clean. A transcription error, a sensor that saturates, a respondent who
+answered a different question, a single subject who behaved nothing like the rest — any of these
+can plant one or two points far from the structure the other thirty-eight follow. With ordinary
+least squares, you do not get to ignore those points: the method pays a *squared* penalty for
+distance, so a residual of $20$ counts not twice as much as a residual of $10$ but four times as
+much. One faraway point can therefore outvote the entire rest of the sample. The fit you report is
+then a compromise between the structure and the contamination — and it can be a bad compromise,
+flat where the truth is steep, or steep where the truth is flat.
+
+This is the regression face of the course's signature lesson. A median resists a wild value because
+it cares only about *rank*, not *magnitude*; the mean does not. A line fit by **least absolute
+deviations** resists a wild $y$ for the same reason the median does — it minimizes $\sum |r_i|$, not
+$\sum r_i^2$. **Theil–Sen** resists by taking a *median* of pairwise slopes. **Huber M-estimation**
+resists by capping the influence of large residuals. These are not three unrelated tricks; they are
+three expressions of one idea — let an extreme point speak, but do not let it shout — which is the
+same idea behind the median, the trimmed mean, and the MAD from Week 10. Knowing which estimator to
+reach for, and knowing what it does and does not protect you from, is what keeps a contaminated
+dataset from quietly producing a confidently wrong line.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Explain why ordinary least squares (OLS) minimizes $\sum r_i^2$ and why that squared penalty makes
+  it sensitive to a single high-leverage point or vertical outlier.
+- Distinguish a **vertical outlier** (an unusual $y$ at an ordinary $x$) from a **high-leverage**
+  point (an unusual $x$), and say which kind moves a slope most and why.
+- Describe three robust slope estimators — **least absolute deviations (L1)**, **Theil–Sen**, and
+  **Huber M-estimation** — at the level of *what each one minimizes or medians or downweights*.
+- Read a robust slope alongside an OLS slope on the same contaminated data, name which points move
+  which fit, and report the comparison honestly rather than silently deleting points.
+- State the assumption-ladder trade for a robust regression: what it assumes, what it downweights,
+  what it protects against, and what it still cannot prove.
+
+## Core vocabulary
+
+- **Residual ($r_i$)** — the vertical gap between an observed $y_i$ and the fitted line,
+  $r_i = y_i - (\hat\beta_0 + \hat\beta_1 x_i)$; the quantity every fitting method scores.
+- **Ordinary least squares (OLS)** — the fit that minimizes the sum of **squared** residuals
+  $\sum_i r_i^2$; efficient under clean, light-tailed data, but **not resistant** to contamination.
+- **Vertical outlier** — a point with an unusual $y$ at a typical $x$; it inflates residual spread
+  and can shift the intercept, but on its own it bends the slope less than a leverage point.
+- **High-leverage point** — a point with an unusual $x$ (far from $\bar x$); it sits on a long lever
+  arm, so even a moderately wrong $y$ there can swing the **slope** dramatically.
+- **Influence** — the actual effect a point has on the fit; high influence usually means high
+  leverage *and* a large residual together. Flagged by **Cook's distance**.
+- **Least absolute deviations (L1)** — the fit that minimizes $\sum_i |r_i|$; the regression analogue
+  of the median, resistant to vertical outliers.
+- **Theil–Sen estimator** — the slope equal to the **median of all pairwise slopes**
+  $\operatorname{median}_{i<j}\!\big[(y_j - y_i)/(x_j - x_i)\big]$; resistant by construction.
+- **Huber M-estimation** — a fit that minimizes $\sum_i \rho(r_i)$ for a loss $\rho$ that is
+  *quadratic for small residuals and linear for large ones*, so big residuals are **downweighted**.
+- **Breakdown point** — the fraction of contamination an estimator tolerates before it can be driven
+  arbitrarily wrong; about $0$ for OLS, higher for the robust fits.
+
+## Concept development
+
+### Why least squares bends: the squared penalty and the lever arm
+
+Ordinary least squares chooses the intercept and slope that make
+
+$$
+\sum_{i=1}^{n} r_i^2 = \sum_{i=1}^{n}\big(y_i - \hat\beta_0 - \hat\beta_1 x_i\big)^2
+$$
+
+as small as possible. The squaring is the whole story. A point that lands $2$ residual units from
+the line contributes $4$ to the sum; a point that lands $20$ units away contributes $400$ — a
+hundred times more. So the optimizer will tilt and shift the line a long way to shave a little off
+that one enormous squared term, even at the cost of fitting the other points worse. Least squares,
+in short, listens loudest to whoever is furthest away.
+
+Distance in $x$ makes this worse through **leverage**. A point far from $\bar x$ sits at the end of
+a long lever arm: rotating the line slightly there produces a large change in its fitted value, so
+the optimizer can buy a big reduction in that point's squared residual with a small rotation. The
+result is that a single high-leverage point with a "wrong" $y$ can set the slope almost by itself.
+This is exactly what happens in the recurring dataset.
+
+In **Dataset D** (synthetic; seed set), $n = 40$ participants have a clean linear structure,
+
+$$
+\text{gain} \approx 2 + 1.5 \cdot \text{sessions}, \qquad \text{residual SD} \approx 4,
+$$
+
+so the honest slope is about $1.5$ points of wellbeing gain per session attended. Two contaminating
+points are planted: a **high-leverage** point at $\text{sessions} = 20$ (the far right edge of $x$)
+with $\text{gain} = 2$, and a **vertical outlier** at $\text{sessions} = 5$ with $\text{gain} = 40$.
+Fit OLS to the full contaminated sample and the slope collapses to about $0.6$ — the **clean OLS
+slope $\approx 1.5$** flattened to **OLS slope $\approx 0.6$**. The leverage point at the right,
+sitting low when the structure says it should sit high, drags the right end of the line down and
+flattens it. *Interpretation:* under contamination, OLS reports roughly $0.6$ points of gain per
+session — well under half the real $1.5$ — so a reader would badly understate how much attendance
+helps. The assumption-ladder move: OLS *assumes* the residuals are well-behaved (roughly symmetric,
+light-tailed, no contamination); nothing here is resampled or downweighted; it protects against
+*nothing* when that assumption fails, and it certainly cannot prove the slope is small — it only
+reports the number the squared penalty forced on it.
+
+### L1 and Theil–Sen: resisting by ranks and medians, not magnitudes
+
+The first robust idea is to stop squaring. **Least absolute deviations (L1)** fits the line that
+minimizes
+
+$$
+\sum_{i=1}^{n} |r_i|
+$$
+
+instead of $\sum r_i^2$. Because the penalty grows only *linearly* with distance, a residual of $20$
+counts twenty times a residual of $1$, not four hundred times — a far-out point no longer dominates.
+L1 is to regression what the median is to a batch of numbers: it tracks the bulk and shrugs at the
+tails. On **Dataset D**, the **L1 (least-absolute-deviations) slope $\approx 1.5$** — it recovers the
+clean structure almost exactly. *Interpretation:* L1 reads attendance as worth about $1.5$ gain
+points per session, matching the clean signal, because the vertical outlier and the low-leverage
+point can no longer buy a cheap tilt. Assumption-ladder move: L1 *assumes* the bulk of the data
+follow a line; it **downweights** large residuals (implicitly, by not squaring them); it protects
+against vertical outliers and, here, the leverage point; it cannot prove the two odd points are
+errors — it just refuses to be governed by them.
+
+The second robust idea throws out the residual machinery entirely and works from **slopes between
+pairs of points**. The **Theil–Sen estimator** computes the slope of the line through every pair of
+observations and takes their **median**:
+
+$$
+\hat\beta_1^{\text{TS}} = \operatorname*{median}_{i < j}\;\frac{y_j - y_i}{x_j - x_i}.
+$$
+
+Most pairs of the $40$ points lie on the clean structure, so most pairwise slopes are near $1.5$;
+the handful of pairs involving a contaminating point give wild slopes, but those land in the *tails*
+of the collection of pairwise slopes, and the median ignores tails. On **Dataset D**, the
+**Theil–Sen slope $\approx 1.45$** — essentially the clean structure. *Interpretation:* Theil–Sen
+says about $1.45$ gain points per session, recovering the signal because a median of pairwise slopes
+is governed by the many ordinary pairs, not the few contaminated ones. Assumption-ladder move:
+Theil–Sen *assumes* a monotone, roughly linear relationship; it **ranks** (medians) the pairwise
+slopes; it protects against a minority of contaminated points; it cannot prove the relationship is
+truly linear, only that the typical pairwise slope is about $1.45$.
+
+### Huber M-estimation: a loss that is quadratic in the middle and linear in the tails
+
+The third robust idea keeps the spirit of least squares but changes the *shape of the penalty*.
+**Huber M-estimation** minimizes $\sum_i \rho(r_i)$ where the Huber loss $\rho$ is
+
+$$
+\rho(r) =
+\begin{cases}
+\tfrac{1}{2} r^2, & |r| \le k, \\[4pt]
+k\,|r| - \tfrac{1}{2}k^2, & |r| > k,
+\end{cases}
+$$
+
+for a tuning constant $k$. For small residuals it is the familiar quadratic, so Huber behaves like
+least squares on the well-fit bulk and keeps OLS's efficiency there. For large residuals it switches
+to a **linear** penalty, so an extreme point's pull stops growing without bound — it is
+**downweighted** rather than allowed to dominate. Equivalently, Huber solves a weighted least-squares
+problem in which points with big residuals get small weights, recomputed until the fit settles.
+
+On **Dataset D**, the **Huber M-estimate slope $\approx 1.4$** — close to the clean $1.5$, recovering
+most of the structure the contamination hid. *Interpretation:* Huber reads attendance as worth about
+$1.4$ gain points per session; it lands a touch below L1 and Theil–Sen here because, near the
+tuning threshold, it still gives the odd points a *little* weight (that is the price of staying
+efficient on the clean part). Assumption-ladder move: Huber *assumes* the bulk is light-tailed and
+linear; it **downweights** residuals larger than $k$; it protects against moderate contamination and
+heavy tails; it cannot prove the model is correct, and — important — plain Huber M-estimation
+protects against vertical outliers better than against **high leverage**, because a leverage point
+can have a *small* residual to the very line it is distorting. That last point is why you compare
+several robust fits rather than trusting one.
+
+Stacked together on Dataset D, the four fits tell the story at a glance: **clean OLS $\approx 1.5$**,
+**contaminated OLS $\approx 0.6$**, **Theil–Sen $\approx 1.45$**, **Huber $\approx 1.4$**, **L1
+$\approx 1.5$**. The robust trio agrees near the clean signal; OLS alone has been captured by two
+points out of forty. Least squares minimizes *squared* residuals, so one far point dominates; the
+robust fits downweight it.
+
+## Worked examples
+
+### Worked example — engagement vs wellbeing gain under contamination (recurring slice)
+
+**What is assumed.** You assume the clean part of **Dataset D** ($n = 40$; synthetic, seed set)
+follows a line, $\text{gain} \approx 2 + 1.5\cdot\text{sessions}$ with residual SD $\approx 4$, and
+that *some* points may be contaminated — specifically a high-leverage point at $\text{sessions} = 20$,
+$\text{gain} = 2$, and a vertical outlier at $\text{sessions} = 5$, $\text{gain} = 40$. You do **not**
+assume which points are bad; the robust fits will reveal that by how they vote.
+
+**Computation.** The static R below fits OLS and three robust estimators to the same contaminated
+data. It is shown as teaching code and is **not executed** here.
+
+```r
+set.seed(45203)
+
+# Dataset D: n = 40, clean structure gain ~ 2 + 1.5 * sessions, residual SD ~ 4
+sessions <- runif(40, 0, 20)
+gain     <- 2 + 1.5 * sessions + rnorm(40, 0, 4)
+
+# Two contaminating points (lock):
+sessions[1] <- 20; gain[1] <-  2   # high-leverage point: far-right x, low y
+sessions[2] <-  5; gain[2] <- 40   # vertical outlier:     ordinary x, huge y
+
+# Ordinary least squares: minimizes sum of SQUARED residuals
+ols <- lm(gain ~ sessions)
+coef(ols)["sessions"]          # OLS slope ~= 0.6   (leverage point flattens the line)
+# (the same clean data WITHOUT the two points gives clean OLS slope ~= 1.5)
+
+# Theil-Sen: MEDIAN of all pairwise slopes  ->  ~= 1.45
+theil_sen <- median(outer(gain, gain, "-")[lower.tri(diag(40))] /
+                    outer(sessions, sessions, "-")[lower.tri(diag(40))])
+# theil_sen ~= 1.45
+
+# Huber M-estimation: quadratic-in-the-middle, linear-in-the-tails loss (downweights)
+huber <- MASS::rlm(gain ~ sessions)        # method = "M", Huber psi
+coef(huber)["sessions"]        # Huber slope ~= 1.4
+
+# Least absolute deviations (L1): minimizes sum of |residuals|
+l1 <- quantreg::rq(gain ~ sessions, tau = 0.5)
+coef(l1)["sessions"]           # L1 slope ~= 1.5
+
+# slopes:  OLS = 0.6   Theil-Sen = 1.45   Huber = 1.4   L1 = 1.5   (clean OLS = 1.5)
+```
+
+**Interpretation.** OLS reports a slope of about $0.6$ — under half the clean $1.5$ — because the
+high-leverage point at $\text{sessions} = 20$ sits low ($\text{gain} = 2$) on a long lever arm and
+the squared penalty pays OLS to flatten the line toward it; the vertical outlier at $\text{sessions}
+= 5$, $\text{gain} = 40$ adds spread but moves the slope less because it sits near the middle of $x$.
+The three robust fits each recover the clean structure — **Theil–Sen $\approx 1.45$** (median of
+pairwise slopes), **Huber $\approx 1.4$** (large residuals downweighted), **L1 $\approx 1.5$**
+(absolute, not squared, penalty) — because none of them lets two points out of forty govern the
+answer. Name which points move which fit: the **leverage point flattens OLS**; the **robust fits
+hold near $1.5$**. The claim the comparison supports is: *attendance plausibly buys about $1.45$–$1.5$
+gain points per session, and the OLS $0.6$ is an artifact of contamination.* The claim it does
+**not** support is that the two odd points are definitely errors — robustness resists them but does
+not adjudicate them; that is an investigation, not a computation.
+
+### Worked example — a calibration line with one mis-recorded standard (transfer, new context)
+
+**What is assumed.** A chemistry lab builds a **calibration line**: it runs a sequence of standards
+of known concentration $x$ and records the instrument's signal $y$, expecting a clean linear
+response $y \approx \beta_0 + \beta_1 x$ across the working range. You assume the response is linear
+and that *most* standards were recorded correctly, but one standard at a **high concentration** (far
+right in $x$) had its signal mis-transcribed — a low number where a high one belonged. These numbers
+are illustrative and distinct from Dataset D, but the structure is the same: a single high-leverage
+point with a wrong $y$.
+
+**Computation.** Fit the calibration line two ways. Ordinary least squares minimizes $\sum r_i^2$, so
+the mis-recorded high-concentration standard — sitting at the end of a long lever arm — pulls the
+right end of the line down and **flattens the calibration slope**, exactly as the leverage point did
+in Dataset D. A robust fit (Theil–Sen on the pairwise slopes, or an L1 / Huber fit) is governed by
+the many correctly-recorded standards, so its slope tracks the true instrument response and the one
+bad standard lands harmlessly in the tail of the pairwise slopes. The shapes of the two answers
+mirror the recurring slice: OLS captured by one point, the robust fit holding near the true slope.
+
+**Interpretation.** The flattened OLS calibration slope would make the instrument read systematically
+**low** at high concentrations — a real measurement error propagated into every future sample
+converted with that line. The robust slope protects the calibration by refusing to let one
+mis-recorded standard set it. Note what changed and what did not: the *context* is an instrument, not
+a wellness program, and the numbers differ, but the **method move is identical** — a high-leverage
+point with a wrong $y$ breaks least squares, and a fit that medians or downweights instead of squaring
+holds. Assumption-ladder move: the robust calibration *assumes* a linear response and a contaminated
+minority; it **downweights / medians out** the bad standard; it protects against that single
+transcription error; it cannot prove the instrument is linear across the whole range — that needs more
+standards, not a more clever loss function.
+
+## A common mistake
+
+The week's central trap — **Risk 10, Risk 11, Risk 12** — is **trusting least squares under
+contamination**, in three braided forms: reporting the OLS line without checking whether a few points
+captured it; treating a small standard error or tight $R^2$ around that line as if it certified the
+slope; and, worst, **silently deleting** the points that look inconvenient and refitting as though
+nothing happened.
+
+The trap sounds like: "I fit the line, the slope is $0.6$, attendance barely helps." But the slope is
+$0.6$ only because the leverage point at $\text{sessions} = 20$ flattened it; the structure the other
+points follow says $1.5$. OLS does not warn you it has been captured — it reports the number the
+squared penalty produced, with a perfectly ordinary-looking standard error, and a confident wrong
+answer is the most dangerous kind. The fix is not faith in OLS; it is to **fit a robust line
+alongside it** and look. When OLS says $0.6$ and Theil–Sen says $1.45$, Huber says $1.4$, and L1 says
+$1.5$, the disagreement *is the diagnostic*: it tells you a small number of points are driving the
+OLS fit, and it tells you roughly where the structure actually lies.
+
+The deletion version is subtler and more tempting. Spotting the $\text{gain} = 40$ outlier and the
+low leverage point, you might just drop them and refit to a clean $1.5$. Resist it (this is the Week 10
+discipline carried forward): **do not auto-delete**. A point that breaks a fit might be a
+transcription error — or it might be a real, rare, informative responder, and deleting it both
+discards information and hides the contamination from your reader. The honest move is to **report the
+comparison**: name that two points out of forty drive the OLS slope, say which points move which fit,
+show OLS and a robust fit side by side, and *investigate* the odd points rather than disappearing
+them. A robust fit lets you do that without first deciding who lives and who dies in the dataset.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence each, say what OLS minimizes, what L1 minimizes, and what Theil–Sen takes the
+   median of. Which two of those care about a residual's *magnitude*, and which cares only about
+   *ranks/medians*?
+2. On Dataset D, the contaminated OLS slope is about $0.6$ while the clean OLS slope is about $1.5$.
+   Which of the two contaminating points — the high-leverage one at $\text{sessions} = 20$ or the
+   vertical outlier at $\text{sessions} = 5$ — does more to flatten the slope, and why does leverage
+   matter here?
+3. A classmate fits Huber M-estimation, gets a slope of $\approx 1.4$, and concludes "robust methods
+   prove the two odd points are data-entry errors." Identify what is wrong with that conclusion.
+4. Explain, in your own words, why squaring residuals (OLS) lets one far point dominate while taking
+   absolute values (L1) does not.
+5. Suppose a single high-leverage point has a *small* residual to the line it is distorting. Which
+   robust fit might still be fooled by it, and why does comparing several robust fits help?
+
+## Reading and source pointer
+
+This week is grounded in the instructor notes (the primary course materials) for robust regression
+and the OLS-versus-robust comparison, with **ModernDive** (Ismay, Kim & Valdivia) on **regression in
+R** supporting the fitting workflow you will use in the companion lab, and **Nonparametric Statistical
+Methods** (Hollander, Wolfe & Chicken) named **only** as an optional advanced reference for the
+robust-fit vocabulary (Theil–Sen, M-estimation). The Hollander–Wolfe–Chicken text is a restricted
+commercial reference, cited and named only — no prose, examples, tables, figures, or exercises are
+reproduced from it or from any source. *These notes are the course's own synthesis, grounded in but
+not copied from the sources.*
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value here
+is **drafted, synthetic, and not independently checked**. The page's load-bearing numbers are the
+Dataset D structure ($\text{gain} \approx 2 + 1.5\cdot\text{sessions}$, residual SD $\approx 4$), the
+two contaminating points (high-leverage $\text{sessions} = 20$, $\text{gain} = 2$; vertical outlier
+$\text{sessions} = 5$, $\text{gain} = 40$), and the five slopes — **contaminated OLS $\approx 0.6$**,
+**clean OLS $\approx 1.5$**, **Theil–Sen $\approx 1.45$**, **Huber $\approx 1.4$**, **L1 $\approx 1.5$**.
+All data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we put the parametric and the assumption-light conclusions side by side and read the
+disagreement honestly. On **Dataset W** the $t$-test ($p \approx 0.08$) is weakened by the
+tail-inflated SD while the permutation test ($p \approx 0.02$) and the rank-sum test ($p \approx 0.01$)
+detect the shift; on **Dataset D** the OLS slope $0.6$ stands beside the robust $1.45$. The lesson
+previews itself: method choice follows the question and the shape of the data, not a contest over which
+test is "more correct" — and where the data are clean and symmetric, the methods would agree.
+
+## See also
+
+- [Week 10 — Robust summaries and outliers](week-10-robust-summaries-and-outliers.qmd) — the same
+  contamination, summarizing one variable: median $8$, trimmed mean $8.3$, MAD, breakdown point.
+- [Week 12 — Comparing parametric and nonparametric conclusions](week-12-comparing-parametric-and-nonparametric-conclusions.qmd)
+  — OLS slope $0.6$ vs robust $1.45$, reported honestly side by side.
+- [Lab 11 — Robust regression versus least squares](../labs/lab-11-robust-regression-versus-least-squares.qmd)
+  — fit OLS, Theil–Sen, Huber, and L1 to Dataset D and read which points move which fit.
+- [Methods glossary](../resources/methods-glossary.qmd) — OLS, L1, Theil–Sen, Huber M-estimation,
+  leverage, influence, Cook's distance, breakdown point.
+- [Robustness and outliers guide](../resources/robustness-and-outliers-guide.qmd) — the
+  resistant-summary and outlier-diagnostic reference, side by side.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide.

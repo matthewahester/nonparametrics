@@ -1,0 +1,178 @@
+---
+title: "Resampling guide (permutation vs bootstrap)"
+subtitle: "The two resampling engines, side by side"
+page-type: reference
+toc: true
+---
+
+Keep this page open whenever a method "builds its own reference distribution from the data." Two engines do
+that, and students mix them up constantly because both involve drawing repeatedly from the sample. They answer
+**different questions**. A **permutation/randomization** test asks *"is there an effect at all?"* — it builds a
+**null** distribution by shuffling labels and reads off a **p-value**. The **bootstrap** asks *"how precise is
+my estimate?"* — it builds a **sampling** distribution by resampling with replacement and reads off a
+**standard error** or a **confidence interval**. Same machinery family, opposite jobs: one ranks an observed
+statistic against a no-effect world, the other measures how much that statistic would wobble across samples.
+
+All numbers below come from the synthetic recurring study **Dataset W** (Express vs Standard service wait times,
+in minutes, right-skewed with a few very long waits) and are provisional — the coursethe worked numbers are provisional pending review. They are illustrative, not confirmed reference values.
+
+## The one-sentence contrast
+
+A permutation test **destroys** the structure you are testing (the link between label and outcome) to see what
+"no link" looks like. The bootstrap **preserves** that structure and **perturbs** the sample to see how stable
+your estimate is. So the permutation test holds the *outcomes* fixed and moves the *labels*; the bootstrap
+holds the *question* fixed and moves the *observations* (drawn with replacement). If you ever cannot say which
+one you are doing, you are about to permute the wrong thing or treat a bootstrap interval as if it were a test.
+
+## Side-by-side comparison
+
+| Dimension | Permutation / randomization | Bootstrap |
+|---|---|---|
+| **What it is for** | testing a **null** (is there an effect?) | estimating **uncertainty** (how precise is the estimate?) |
+| **Resampling rule** | **shuffle the labels**; sample *without* replacement (a reordering) | **resample observations *with* replacement** from the data |
+| **Held fixed** | the pooled **outcomes** (the 50 wait times) and the group sizes | the **estimand and method**; you re-estimate the same statistic |
+| **What moves** | which observation gets the "Express"/"Standard" label | which observations land in each resample (some repeat, some drop) |
+| **Distribution it builds** | the **null** reference distribution (centered where "no effect" sits) | the **sampling** distribution of the statistic (centered near the estimate) |
+| **What you read off** | a **p-value** — the tail probability of the observed statistic | a **standard error** and/or a **confidence interval** |
+| **Sampling from** | reorderings of the observed labels under exchangeability | the empirical distribution $\hat F_n$ (sampling from the data itself) |
+| **Core assumption** | **exchangeability** under the null (or a known assignment mechanism) | $\hat F_n$ is a good stand-in for $F$; observations are independent |
+| **Classic failure** | permuting the **wrong thing** / wrong exchangeability unit | **extreme order statistics** (the max), tiny $n$, dependence |
+
+The shared engine is the **empirical distribution** $\hat F_n(x) = \frac{1}{n}\sum_i \mathbf 1\{x_i \le x\}$:
+ranks, permutations, and the bootstrap all lean on the data's own distribution rather than an assumed normal
+curve. What differs is the *operation* — reorder labels versus draw with replacement — and the *quantity* you
+walk away with — a p-value versus an SE or CI.
+
+## What each one reads off (Dataset W)
+
+### Permutation: a p-value
+
+The test statistic is the **difference in medians**, $\tilde x_{\text{Express}} - \tilde x_{\text{Standard}}$.
+The observed value is $12 - 18 = -6$ minutes (Express faster). Pool the 50 waits, **shuffle the 50 group
+labels** under the null of exchangeability, recompute the median difference, and repeat about $10{,}000$ times.
+
+```r
+set.seed(45203)
+obs_diff <- median(express) - median(standard)        # observed = -6
+pooled   <- c(express, standard)
+n_e      <- length(express)                            # 25
+perm <- replicate(10000, {
+  lab <- sample(pooled)                                # shuffle, no replacement
+  median(lab[1:n_e]) - median(lab[-(1:n_e)])
+})
+mean(abs(perm) >= abs(obs_diff))                        # two-sided p ~ 0.02
+```
+
+**Interpretation.** The permutation distribution is centered at $0$ (the no-effect world); the observed $-6$
+sits in its tail, giving a two-sided permutation $p \approx 0.02$. So a median gap this large is unlikely if
+the Express/Standard label were exchangeable — evidence of a real shift. **Assumption-ladder move:** you
+*assume* exchangeability of the labels under the null; you *shuffle* the labels (outcomes held fixed); this
+*protects against* the normality assumption a t-test would need; it *cannot prove* the size of the effect, only
+that "no effect" is implausible — and, without random assignment, it does not by itself license a causal read.
+
+### Randomization: the same shuffle, a design warrant
+
+A **randomization** test runs the *identical* shuffle, but its license comes from the **assignment mechanism**:
+if the Express workflow was *randomly assigned* to arrivals, the reshuffle mimics that assignment, the
+randomization $p \approx 0.02$, and the conclusion can be read **causally**. **Assumption-ladder move:** you
+*assume* the known random-assignment mechanism (not just exchangeability); you *shuffle* labels the way the
+design did; this *protects* the causal claim; it still *cannot prove* anything about a population you did not
+sample. Permutation and randomization share machinery and differ only in **what justifies the shuffle**.
+
+### Bootstrap: an SE and a CI
+
+For uncertainty, **resample each group with replacement** (25 from each) and recompute the statistic.
+
+```r
+set.seed(45203)
+boot_med <- replicate(10000, median(sample(express, replace = TRUE)))
+sd(boot_med)                                           # bootstrap SE of median ~ 1.2
+
+boot_diff <- replicate(10000, {
+  median(sample(express,  replace = TRUE)) -
+  median(sample(standard, replace = TRUE))
+})
+quantile(boot_diff, c(.025, .975))                     # percentile CI ~ (-10, -2)
+```
+
+**Interpretation.** The bootstrap SE of the Express median is $\approx 1.2$ minutes — a measure of how much the
+median would wobble across resamples (note its bootstrap distribution is **lumpy/discrete**, since the median
+only takes a few order-statistic values). The **percentile** 95% CI for the difference in medians is
+$\approx (-10, -2)$ minutes, which **excludes $0$**, so the data are consistent with Express being roughly 2 to
+10 minutes faster in median wait. **Assumption-ladder move:** you *assume* $\hat F_n$ approximates $F$ and the
+observations are independent; you *resample with replacement*; this *protects against* writing down a formula
+SE the skewed median does not obey; it *cannot prove* the interval's coverage is exactly $95\%$ — under skew the
+**percentile, basic, and BCa** intervals can disagree (BCa corrects for bias and skew).
+
+## Failure cases (read before you trust either one)
+
+### Where permutation breaks
+
+| Failure | What goes wrong | Fix / read |
+|---|---|---|
+| **Wrong exchangeability** | the units are *not* exchangeable under the null (e.g. a time trend, or clusters), so shuffling fabricates a null that never held | check that "no effect" really would make the labels swappable; block or stratify the shuffle |
+| **Permuting the wrong thing** | shuffling individual rows when the design assigned **clusters/pairs**, breaking the dependence the design created | permute at the unit the design used (whole clusters, or within pairs) |
+| **Paired data shuffled freely** | a paired/before-after structure permuted as if independent inflates the apparent information | flip signs *within* pairs, do not pool and reshuffle across them |
+
+A permutation p-value is only as honest as its exchangeability assumption. The test is **distribution-light**,
+not **assumption-free**: it trades the normality assumption for an exchangeability assumption, and that bill
+still comes due.
+
+### Where the bootstrap breaks
+
+| Failure | What goes wrong | Fix / read |
+|---|---|---|
+| **Extreme order statistics** | the **maximum** wait can never be resampled *beyond* the observed max, so the bootstrap badly **understates** uncertainty for extremes | do not bootstrap the max/min; use methods built for tails |
+| **Tiny $n$** | with very few observations $\hat F_n$ is a poor stand-in for $F$, so the SE/CI are unstable | treat small-sample bootstrap intervals as rough; report the limitation |
+| **Dependence** | resampling rows independently destroys autocorrelation or clustering, deflating the SE | use a **block** bootstrap (resample blocks) or resample whole clusters |
+
+The bootstrap is a **procedure, not a guarantee**. It estimates *sampling* variability under independence; it
+does not certify that its interval is assumption-free, nor that it covers a parameter the statistic cannot pin
+down (like the maximum).
+
+## A quick "which one do I want?"
+
+| If your question is… | …use | …and report |
+|---|---|---|
+| "Is there an effect / a difference at all?" | permutation or randomization | a **p-value** (and the assignment warrant if causal) |
+| "How precise is my estimate?" | bootstrap | a **standard error** and a **confidence interval** |
+| "Both" | run **both** — they are complements, not rivals | the p-value *and* the interval, each labeled honestly |
+
+The two engines are complementary: a permutation test can tell you the median gap of $-6$ is unlikely under no
+effect ($p \approx 0.02$), while the bootstrap CI of $\approx (-10, -2)$ tells you *how large* that gap
+plausibly is. Neither replaces the other, and neither is assumption-free.
+
+## Common errors
+
+- **Resampling rows when dependence must be preserved.** Paired, clustered, or time-ordered data resampled
+  row-by-row breaks the very structure the design built — permute within pairs / blocks, or use a block
+  bootstrap, instead of shuffling or resampling free rows.
+- **Treating a bootstrap interval as assumption-free.** A percentile CI like $\approx (-10, -2)$ still assumes
+  $\hat F_n$ approximates $F$ and that observations are independent; it is assumption-**light**, never
+  assumption-free, and it fails outright for extremes like the maximum.
+- **Permuting the wrong thing.** Shuffling at a finer grain than the design assigned (rows instead of clusters,
+  or across pairs instead of within) fabricates an exchangeability that never held and shrinks the p-value
+  dishonestly.
+- **Confusing the two distributions.** A permutation distribution is a **null** distribution centered at "no
+  effect"; a bootstrap distribution is a **sampling** distribution centered near your estimate — never read a
+  p-value off a bootstrap, or an SE off a permutation.
+- **Reporting a bootstrap interval as a test.** "The CI excludes $0$" is uncertainty framing borrowed for a
+  decision; if the question is genuinely "is there an effect?", run the permutation test and report its tail.
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value — the observed
+median difference $-6$, the permutation/randomization $p \approx 0.02$, the bootstrap SE of the median
+$\approx 1.2$, and the percentile CI $\approx (-10, -2)$ — is **drafted, synthetic, and not independently
+checked**. They are provisional, not confirmed reference values.
+
+## See also
+
+- `methods-glossary.qmd` — the shared notation (empirical distribution, ranks, bootstrap, permutation).
+- `method-chooser.qmd` — the assumption-light decision guide for picking a method.
+- `robustness-and-outliers-guide.qmd` — when estimates need resistance, not just resampling.
+
+---
+
+*This page is a study reference. For graded specifics — deadlines, submissions, and policies — **Blackboard
+(the LMS) is authoritative**.*

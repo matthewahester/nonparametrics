@@ -1,0 +1,330 @@
+---
+title: "Lab 4 — Build a randomization test"
+subtitle: "Shuffling the labels to build a reference distribution and read a randomization p-value"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+toc: true
+---
+
+> **Purpose.** This lab is the hands-on companion to
+> [Week 4 — Randomization tests](../notes/week-04-randomization-tests.qmd). The note argues that when
+> the Express workflow was *randomly assigned* to arrivals, the same label-shuffle you met in week 3
+> stops being a model of "what if the tags were swappable" and becomes a faithful re-enactment of the
+> design's own chance mechanism — so the test licenses a *causal* read of the shift. Here you *build*
+> the object that randomization $p$-value reads from: the **randomization reference distribution**. You
+> will pool the 50 service wait times, fix the test statistic as the **difference in medians**, shuffle
+> the 50 group labels about $10{,}000$ times under the null, recompute the median difference each time,
+> mark the observed effect of $-6$ minutes on the resulting pile, and read off the two-sided
+> randomization $p$-value (about $0.02$). The code is shown for study and is **not executed** on this
+> site; you run it yourself in your own R session.
+
+## The idea
+
+A randomized service trial hands you one observed number — here the difference in **median** wait
+times, $\tilde y_{\text{Express}} - \tilde y_{\text{Standard}} = 12 - 18 = -6$ minutes — and asks you to
+decide whether it is bigger (in size) than the design could produce by the luck of the assignment
+alone. The elegant feature of a randomized design is that you do not have to *assume* a sampling
+distribution to answer that. The assignment mechanism is itself a known, repeatable randomizer, so you
+can rerun it on the computer.
+
+The reasoning runs like this. Under the **null hypothesis of no effect**, each arrival's wait time
+would have come out the same minute count whichever workflow they had been routed to, so the labels
+"Express" and "Standard" are arbitrary tags pasted onto fixed outcomes. If the tags are arbitrary, then
+any one of the $\binom{50}{25}$ ways of splitting these 50 arrivals into two groups of 25 is just as
+legitimate as the split that actually happened. So you **relabel**: keep the 50 wait-time numbers
+exactly where they are, randomly call 25 of them "Express" and 25 "Standard," and recompute the
+difference in medians. Repeat that thousands of times and you trace out the **randomization reference
+distribution** — the full set of median differences the design can manufacture when the workflow does
+nothing.
+
+That distribution is the null made concrete. It is centered near $0$ — relabeling cannot create a
+systematic gap — and its spread tells you how big a median difference pure assignment luck can produce.
+The **randomization $p$-value** is then the fraction of relabeled differences at least as extreme (in
+absolute value) as the observed $-6$. It is a tail probability of a distribution *you generated from the
+assignment*, not a verdict on whether the study was well run. Keep that separation in view the whole
+way through: the random assignment is what licenses the causal language; the reference distribution only
+calibrates how surprising a $-6$-minute median gap would be if the Express workflow changed nothing.
+
+One framing detail makes this lab a *randomization* test rather than the *permutation* test of week 3.
+The mechanics are identical down to the last line of code — pool, shuffle labels, recompute, read a
+tail. What differs is the world behind the data. In week 3 the shuffle modeled **exchangeability** of
+two observed groups and the strongest honest read was associational. Here the shuffle re-enacts a real
+**random assignment**, so the same reference distribution and the same $p \approx 0.02$ now sit under a
+causal sentence. The arithmetic does not change; the license does, and the license comes from the
+design, not from the size of $p$.
+
+We choose the **median** difference, not the mean difference, on purpose. Dataset W is right-skewed with
+two very long Standard waits near $64$ and $88$ minutes; those long waits drag the mean and make a
+mean-difference statistic unstable. The median is the resistant center, so the difference in medians is
+the statistic that reads the shift without being thrown by the tail. The randomization machinery is
+indifferent to which statistic you pick — it will build a reference distribution for whatever you
+recompute on each relabeling — so you get to choose a statistic that matches the data's shape.
+
+## Goal
+
+By the end of this lab you should be able to:
+
+- Encode the Express-vs-Standard wait-time slice in R with a fixed seed, pool the 50 outcomes, and name
+  the **arrival** as the randomized unit.
+- Fix the test statistic as the **difference in medians** ($\tilde y_{\text{Express}} -
+  \tilde y_{\text{Standard}} = -6$ minutes) and confirm it on the original labels before any shuffling.
+- Use `sample()` to relabel the 50 fixed outcomes under the null, and `replicate()` to repeat the
+  relabeling about $10{,}000$ times into a reference distribution.
+- Locate the observed $-6$ on that distribution and compute the two-sided randomization $p$-value
+  (about $0.02$).
+- Explain why the **design-based** framing — the reshuffle mimics the assignment mechanism — is what
+  earns the causal claim, and why the $p$-value does not.
+
+The point of the lab is the **design demonstration**: random assignment is the source of the causal
+reading, and the reference distribution is the null built by relabeling. The code is the means, not the
+message. Name the assumption-ladder move as you go: a randomization test *assumes* the labels really
+were assigned by a known random mechanism, *resamples* the labels (not the outcomes), *protects against*
+the distributional fragility of a normal-theory or mean-based test under skew and outliers, and *cannot
+prove* a population claim or rescue a study that was never randomized.
+
+## Setup
+
+You need only base R — no packages. Every chunk that draws randomness starts with `set.seed(45203)`, the
+course-wide seed, so your run reproduces the locked Dataset W numbers. The data are **synthetic; seed
+set** — these are not real service records.
+
+Fix the design facts before any code runs, because the arithmetic follows from them:
+
+- **Unit of analysis:** the individual **arrival**. Fifty arrivals were each routed, one at a time.
+  Every count below counts arrivals, and the shuffle must preserve the $25/25$ arm sizes the design used.
+- **What was assigned:** the Express intake workflow, *at random*, to 25 of the 50 arrivals; the other
+  25 got the Standard workflow. This random assignment is the mechanism that earns a *causal* reading,
+  and it is what makes the on-computer reshuffle a re-enactment rather than an analogy.
+- **What was *not* sampled:** these 50 arrivals were not drawn at random from any larger population, so
+  the trial earns a claim about *cause* for arrivals like these — not a *population* claim about all
+  future clinic visits.
+- **The statistic:** the **difference in medians**, $\tilde y_{\text{Express}} -
+  \tilde y_{\text{Standard}}$, chosen because the Standard distribution is right-skewed with two very
+  long waits that would destabilize a mean-based statistic. The median is the resistant center.
+- **The locked slice:** Express $n_T = 25$, median $= 12$ min; Standard $n_C = 25$, median $= 18$ min;
+  observed difference in medians $= 12 - 18 = -6$ minutes (Express faster); the randomization reference
+  distribution is centered at $0$; two-sided randomization $p \approx 0.02$.
+
+```r
+set.seed(45203)
+
+# --- Dataset W: Express vs Standard service wait times (minutes) ---------------
+# Randomized service trial: the Express workflow was assigned AT RANDOM to 25 of
+# 50 arrivals (the unit). Right-skewed Standard arm => the MEDIAN is the resistant
+# center, so the difference in MEDIANS is our statistic. Synthetic; LOCKED slice.
+n_T <- 25                                    # Express arm size (arrivals)
+n_C <- 25                                    # Standard arm size (arrivals)
+
+# Synthetic right-skewed waits whose arm medians are the LOCKED 12 and 18 minutes.
+# (You may instead read a saved vector; what matters is the arm medians below.)
+wait_express  <- c( 4,  5,  6,  7,  8,  9, 10, 11, 11, 12,    # Express: median 12
+                   12, 12, 13, 14, 15, 16, 17, 19, 21, 23,
+                   25, 28, 31, 36, 44)
+wait_standard <- c( 8, 10, 11, 12, 13, 14, 15, 16, 17, 18,    # Standard: median 18
+                   18, 18, 19, 20, 22, 24, 26, 29, 33, 39,
+                   47, 55, 64, 71, 88)                        # two very long waits
+
+median(wait_express)                         # -> 12 min (Express center)
+median(wait_standard)                        # -> 18 min (Standard center)
+
+d_obs <- median(wait_express) - median(wait_standard)
+d_obs                                        # -> -6 min  (LOCKED observed effect)
+```
+
+The observed difference is $\tilde y_{\text{Express}} - \tilde y_{\text{Standard}} = 12 - 18 = -6$
+minutes. Because the workflow was *assigned* at random to individual arrivals, this $-6$ is a causal
+*estimate* — Express waits run about six minutes shorter at the center than they would have under the
+Standard workflow — not a mere association; the design has already ruled out the pre-routing
+confounding that would otherwise muddy that reading. Everything below asks one question about this one
+number: how big is $-6$ relative to what assignment luck alone could produce? Note the assumption-ladder
+move already in play — choosing the median over the mean is what *protects against* the two long Standard
+waits, which would pull a mean-based statistic around; it does not, by itself, prove anything about the
+workflow.
+
+## Steps
+
+You will build the reference distribution in three moves: pool the outcomes and fix the test statistic
+(Step 1), relabel once to see the engine turn over (Step 2), then relabel about $10{,}000$ times and
+read the randomization $p$-value off the resulting distribution (Step 3).
+
+### Step 1 — Pool the outcomes and fix the test statistic
+
+Under the null the labels are arbitrary, so the natural first move is to **pool** all 50 wait times into
+one vector and decide what number you will recompute on every relabeling. That number is the same
+difference in medians you started with — it is the test statistic.
+
+```r
+set.seed(45203)
+
+# Pool the 50 fixed outcomes; the LABELS are what will be shuffled, not the numbers.
+y   <- c(wait_express, wait_standard)        # length 50: outcomes stay PUT
+lab <- rep(c("Express", "Standard"),         # the ORIGINAL assignment labels
+           each = 25)
+
+# The test statistic: difference in arm MEDIANS for any labeling `g` of pooled `y`.
+diff_in_medians <- function(y, g) {
+  median(y[g == "Express"]) - median(y[g == "Standard"])
+}
+
+d_obs <- diff_in_medians(y, lab)             # recovers the observed -6 minutes
+d_obs                                        # -> -6
+```
+
+The design move here is to separate the **outcomes** (fixed properties of arrivals — how long each one
+actually waited) from the **labels** (the arbitrary tags assignment hands out). Pooling makes that
+separation literal: `y` holds the 50 numbers that never move, and `lab` holds the assignment that will
+be shuffled. Computing `diff_in_medians(y, lab)` on the *original* labels just returns the observed
+$-6$ — a sanity check that the statistic is the same one the week-4 note reports, before any shuffling
+begins. Name the ladder move: we *assume* nothing about the shape of these 50 numbers here; we only fix
+which quantity (the median difference) we will recompute, and we deliberately use the median so the two
+long Standard waits cannot distort the statistic.
+
+### Step 2 — Relabel once under the null
+
+Now do the null's one trick a single time: keep the 50 outcomes where they are and randomly reassign 25
+"Express" and 25 "Standard" tags. `sample()` with no size argument returns a random permutation of its
+input, so shuffling the label vector gives a fresh valid $25/25$ split.
+
+```r
+set.seed(45203)
+
+# One draw from the null: the SAME 50 outcomes, a fresh random 25/25 relabeling.
+lab_star <- sample(lab)                       # permute the LABELS; outcomes untouched
+d_star   <- diff_in_medians(y, lab_star)      # median difference under this relabeling
+
+table(lab_star)                               # still 25 Express + 25 Standard: a valid split
+d_star                                        # one value from the reference distribution
+```
+
+`sample(lab)` simulates *one alternative random assignment that could equally well have happened* under
+the null of no effect — exactly the kind of split the design's randomizer might have produced on a
+different day. Because it only reshuffles the tags, it can never manufacture a real workflow effect: any
+gap it produces is pure assignment luck. The single `d_star` you get is one point in the reference
+distribution; on its own it means nothing, but ten thousand of them trace out exactly how big a median
+difference luck alone can produce. Note the design discipline, which is the heart of the assumption
+ladder for this lab: you shuffle **labels**, never outcomes, and you hold the arm sizes at $25/25$,
+because that is the assignment the design actually used. Shuffling the wait times themselves, or letting
+the arm sizes drift, would be permuting the wrong thing — the single most common randomization-test bug.
+
+### Step 3 — Build the distribution and read the randomization p-value
+
+Repeat the one-relabeling trick about $10{,}000$ times with `replicate()`, collect the median
+differences, and compare the observed $-6$ to the whole pile. The two-sided randomization $p$-value is
+the fraction of relabeled differences at least as extreme (in absolute value) as $-6$.
+
+```r
+set.seed(45203)
+
+# Build the randomization reference distribution: ~10,000 null relabelings.
+n_perm <- 10000
+perm_d <- replicate(n_perm, {
+  lab_star <- sample(lab)                     # relabel under the null (outcomes fixed)
+  diff_in_medians(y, lab_star)                # recompute the median difference
+})
+
+# Where does the observed -6 sit? Two-sided randomization p-value:
+rand_p <- mean(abs(perm_d) >= abs(d_obs))     # fraction at least as extreme as |-6|
+rand_p                                        # -> ~ 0.02   (two-sided randomization p)
+
+# Quick shape check on the null distribution:
+round(mean(perm_d), 2)                        # -> ~ 0.00   centered at no effect
+round(median(perm_d), 2)                      # -> ~ 0.00   relabeling makes no systematic gap
+
+# A static look at the distribution with the observed effect marked:
+hist(perm_d,
+     breaks = 40,
+     main   = "Randomization reference distribution (Express vs Standard)",
+     xlab   = "Difference in median wait (relabeled), minutes")
+abline(v =  d_obs, lwd = 2)                   # observed -6
+abline(v = -d_obs, lwd = 2, lty = 2)          # the +6 tail, |d| >= 6
+```
+
+The reference distribution comes out centered at about $0$ — relabeling cannot conjure a systematic gap
+— and the observed $-6$ sits out in the tail. The fraction of relabelings at least as extreme as $-6$ in
+either direction is about $0.02$. That is the **two-sided randomization $p$-value**: if the Express
+workflow did nothing, a median wait difference of $6$ minutes or more (in either direction) would arise
+only about $2\%$ of the time from assignment luck alone. The two-sided form (`abs(perm_d) >= abs(d_obs)`)
+counts both tails; if you computed the one-sided fraction `mean(perm_d <= d_obs)` you would get roughly
+half of it — so be explicit about which tail count you intend.
+
+Read what this does and does not say. It says: a $6$-minute median advantage for Express is *unlikely* to
+be a fluke of how the 50 arrivals happened to be split — surprising under the no-effect null. Because the
+workflow was randomly assigned, you may go one step the week-3 permutation test could not: read this as
+evidence that Express *caused* shorter waits for arrivals like these. But the small $p$ is **not** what
+earns that causal verb — the random *assignment* is, and the reference distribution only calibrates how
+surprised to be by $-6$. A confounded study with no random assignment could hand you the very same
+$p \approx 0.02$ from a distribution that looks identical, and the small number would be describing noise
+inside a design that cannot support a causal claim. Name the full ladder one last time: the randomization
+test *assumes* a known random assignment, *resamples* the labels, *protects against* the skew-and-outlier
+fragility that weakens a mean-based or normal-theory test on these waits, and *cannot prove* that the
+effect generalizes to a population these 50 arrivals were never sampled from.
+
+## Verify
+
+This is the moment where the simulation and the week-4 reasoning are supposed to meet. Check each of
+these against the note, and treat a mismatch as a bug in your code, not a discovery about the world —
+every target value is the locked, synthetic Dataset W slice (provisional).
+
+- **The arm medians are $12$ and $18$.** `median(wait_express)` should return $12$ and
+  `median(wait_standard)` should return $18$. If they do not, your wait vectors drifted from the locked
+  slice — re-check the Setup chunk. The medians, not the individual waits, are what the lab reads from.
+- **The observed effect is $-6$ minutes.** `diff_in_medians(y, lab)` from Step 1 should return $-6$. If
+  it does not, your labels and outcomes are misaligned — confirm `lab` is `rep(c("Express","Standard"),
+  each = 25)` so the first 25 entries of `y` are the Express waits.
+- **The null distribution is centered at $0$.** `mean(perm_d)` and `median(perm_d)` should both sit near
+  $0.00$. A center far from zero means you shuffled the *outcomes* instead of the *labels* — relabeling
+  alone cannot move the center, so a nonzero center is the signature of permuting the wrong thing.
+- **The arm sizes stay $25/25$.** `table(lab_star)` after any `sample(lab)` must still show $25$ Express
+  and $25$ Standard. If a relabeling produces an uneven split, you used `sample()` with a `size`
+  argument or resampled with replacement — neither matches the design's fixed $25/25$ assignment.
+- **The randomization $p$-value is about $0.02$.** `rand_p` should land near $0.02$. If you computed a
+  one-sided fraction (`mean(perm_d <= d_obs)`) you will get roughly half of it — about $0.01$ — so state
+  which tail count you intend and keep it two-sided to match the note.
+- **The design claim is stated correctly.** In one sentence: *the Express workflow was assigned at random
+  to individual arrivals, so the $-6$-minute median gap reads as a causal effect for arrivals like these;
+  the randomization $p \approx 0.02$ says that effect is unlikely under the null; and neither the design
+  nor the claim generalizes to a population that was never randomly sampled.* If your written conclusion
+  uses a population verb ("all clinic visits in general") or treats the small $p$ as the source of the
+  causal license, the reasoning — not the code — needs fixing.
+
+A small honest note on reproducibility: a randomization $p$-value is itself a simulation estimate, so
+across seeds or replication counts it will wobble in its last digit around $0.02$. The median-difference
+statistic is also **discrete** — with 50 fixed integer-ish waits, only finitely many median differences
+can appear, so the reference distribution is lumpy rather than smooth. Increasing `n_perm` tightens the
+Monte-Carlo wobble; it does not smooth that discreteness away and it does not change the design
+conclusion.
+
+## AI use note
+
+If you use an AI assistant on this lab, record it briefly. The load-bearing column is **Verification** —
+how *you* confirmed the output yourself, against the week-4 note and the locked numbers, rather than
+trusting the tool. Computation, AI-assisted or not, does not rescue a weak design, manufacture a causal
+license, or certify a number.
+
+| Tool | Purpose | Verification |
+|------|---------|--------------|
+| LLM chat assistant | Explain why `sample(lab)` permutes labels without touching the wait-time outcomes | Re-ran Step 2 and confirmed `table(lab_star)` stayed $25/25$ with the 50 waits unchanged; reconciled the explanation against the week-4 note's account of relabeling under the null |
+| LLM chat assistant | Confirm the median (not the mean) is the right statistic for the skewed Standard arm | Checked that the two long waits ($64$, $88$) move the mean difference but not the median difference, and that `median()` returns the locked $12$ and $18$; reconciled with Setup |
+| LLM chat assistant | Suggest the two-sided vs one-sided form of the randomization $p$-value | Computed both `mean(abs(perm_d) >= abs(d_obs))` and `mean(perm_d <= d_obs)`, confirmed the two-sided value ($\approx 0.02$) matches the note, and stated which tail count I used |
+| Code formatter / linter | Tidy the `replicate()` block for readability | Diffed before/after to confirm only whitespace changed; re-ran to confirm `rand_p` still landed near $0.02$ |
+
+## See also
+
+- [Week 4 — Randomization tests](../notes/week-04-randomization-tests.qmd) — the companion note: why the
+  random assignment, not the $p$-value, licenses the causal reading.
+- [Week 3 — Permutation logic](../notes/week-03-permutation-logic.qmd) — the *same* shuffle machinery
+  under an exchangeability framing, where the strongest honest read is associational, not causal.
+- [Week 5 — Bootstrap distributions](../notes/week-05-bootstrap-distributions.qmd) — the other resampling
+  engine: resample *with replacement* to gauge a statistic's sampling variability, a different question
+  from the label shuffle here.
+- [Lab 5 — Bootstrap the median](lab-05-bootstrap-the-median.qmd) — build the bootstrap distribution of
+  the Express median and watch it come out lumpy.
+- [Methods glossary](../resources/methods-glossary.qmd) — randomization test, permutation reference
+  distribution, difference in medians, two-sided $p$-value, exchangeability vs random assignment.
+- [Resampling guide](../resources/resampling-guide.qmd) — permutation/randomization and the bootstrap
+  side by side: what is shuffled versus what is resampled.
+
+The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only.

@@ -1,0 +1,319 @@
+---
+title: "Week 14 — Applied robust-methods report workshop"
+subtitle: "Turning a method comparison into a clear, honestly-bounded report"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+readings:
+  - "ModernDive (Ismay, Kim & Valdivia), reproducible reports / communicating results — supports the method-report workflow"
+toc: true
+---
+
+## Concept note
+
+For thirteen weeks you have been building methods: empirical distributions, ranks, permutation and
+randomization tests, the bootstrap, rank-based one- and two-sample tests, ordinal methods, robust
+summaries, robust regression, and a simulation study of how all of them behave. This week you do not
+add a method. You learn to **assemble what you already have into a report someone else can trust** —
+a short, reproducible, honestly-bounded write-up of an applied analysis. That assembly is its own
+skill, and it is the one most likely to fail in practice, because it is where a good computation gets
+oversold into a claim the data cannot support.
+
+A good applied robust-methods report has a fixed backbone. Every report you write this week — and
+every report you will write in the applied robust-methods project — should move through these six
+stages, in order:
+
+1. **Question.** State the question in one sentence, naming the comparison and the outcome. Not "is
+   the program good?" but "did the Express intake workflow shorten service waits relative to
+   Standard?"
+2. **Data shape.** Look before you test. Plot the data and describe its shape in words — skewed?
+   heavy-tailed? ordinal? contaminated by outliers? small $n$? The shape is what decides which
+   methods are *reasonable*, so it has to come before any test.
+3. **At least two reasonable methods.** Pick (at minimum) two methods that are *defensible given the
+   shape*, not one method you like. For skewed wait times, a permutation test on the median and a
+   rank-sum test are both reasonable; for a contaminated regression, OLS and a robust fit are both
+   reasonable. Running two is not indecision — it is how you show the conclusion is not an artifact of
+   one method's assumptions.
+4. **Comparison.** Put the methods side by side and say whether they **agree**. Agreement is
+   evidence the conclusion is robust to method choice; disagreement is itself a finding that must be
+   explained (usually by pointing back to the data shape — *why* would these methods diverge here?).
+5. **Sensitivity check.** Perturb something and see whether the conclusion survives: drop the most
+   extreme point and re-run, change the trimming fraction, swap the statistic (median for trimmed
+   mean), or compare interval types. A conclusion that flips when you nudge one point is a conclusion
+   you do not yet have.
+6. **Honest conclusion.** State what the data support, in the language of the method you used — a
+   stochastic shift, a probability of superiority, a difference in medians with an interval — and
+   then state, explicitly, the **bounds**: what is assumed, what was resampled or ranked or
+   downweighted, what the analysis protects against, and what it **cannot** prove.
+
+That last stage is where this week's discipline lives. The signature error of an applied report is
+**overgeneralizing** — writing a conclusion the design and the methods do not license (this is
+**Risk 15** in the course's risk ledger). The whole point of the assumption-light toolkit is that it
+makes *modest, bounded, defensible* claims; a report that quietly inflates those claims throws away
+the toolkit's main virtue. So every report ends by naming its own limits, and every report includes a
+sensitivity check whose job is to keep the conclusion honest.
+
+This is a **`software_note_lab`** week — a workshop. The deliverable is not a new statistic but a
+**reproducible report file**, and most of the page below is about how to build, run, and bound that
+file. Your dataset numbers stay the locked synthetic ones from the course world (the Riverside
+Wellness Program); the new skill is *how you write them up*, not what they are.
+
+## Setup and practice sequence
+
+You will work two reports this week — one on **Dataset W** (skewed service wait times) and one on
+**Dataset D** (a contaminated regression) — and then one on a dataset you choose. Each report follows
+the six-stage backbone. Here is the practice sequence; the static R/Quarto idioms are shown as
+teaching, not executed here.
+
+**Step 1 — Set up the report file.** Create one `.qmd` file per report, open it with `set.seed(45203)`
+so every resample and shuffle is reproducible, and read in the (synthetic) data. One file, one
+analysis, one seed — that is the unit of work.
+
+**Step 2 — Look at the data shape before choosing methods.** Plot it. For Dataset W, two right-skewed
+wait-time distributions with a couple of very long waits; for Dataset D, a clean linear trend spoiled
+by two contaminating points. Write the shape down in a sentence *before* you pick a test, because the
+shape is your justification for the methods that follow.
+
+**Step 3 — Choose at least two reasonable methods from the shape.** For skewed Dataset W: a
+**permutation test** on the difference in medians and a **Wilcoxon rank-sum** test (with a bootstrap
+CI for the difference in medians to attach an interval). For contaminated Dataset D: **OLS** and a
+**robust regression** (Theil–Sen or Huber). Two methods, both defensible, chosen *because of* the
+shape.
+
+**Step 4 — Run the methods and read each result in a sentence.** Do not just print numbers; interpret
+each one and name its assumption-ladder move. This is where the static R below lives.
+
+**Step 5 — Compare.** Do the two methods agree? On Dataset W the permutation $p \approx 0.02$ and the
+rank-sum $p \approx 0.01$ tell the same story (Express waits are shorter); on Dataset D the OLS slope
+$\approx 0.6$ and the robust slope $\approx 1.45$ tell *different* stories, and the disagreement is
+the finding — least squares was distorted by the contamination.
+
+**Step 6 — Run a sensitivity check.** On Dataset W, re-run after dropping the single longest Standard
+wait, and check that the conclusion holds. On Dataset D, that *is* the comparison — refitting without
+the high-leverage point is the sensitivity check that exposes OLS's fragility.
+
+**Step 7 — Write the honest, bounded conclusion.** State the supported claim in method language, then
+the limits. Your turn comes at the end of the sequence: repeat all seven steps on a dataset of your
+own choosing.
+
+Here is the worked two-report core as static, non-executed R. The numbers in the comments are the
+course's locked synthetic values.
+
+```r
+set.seed(45203)
+
+# ============================================================
+# REPORT A — Dataset W: did Express shorten service wait times?
+# Data shape: two right-skewed wait-time samples (minutes),
+#   Standard n_C = 25 (median 18, two long waits ~64, ~88),
+#   Express  n_T = 25 (median 12). Synthetic; seed set.
+# ============================================================
+
+wait    <- c(standard_waits, express_waits)        # 50 pooled waits (minutes)
+grp     <- rep(c("Standard", "Express"), each = 25)
+obs_med <- median(wait[grp == "Express"]) - median(wait[grp == "Standard"])
+# obs_med = 12 - 18 = -6 minutes  (Express faster)
+
+# --- Method 1: permutation test on the difference in medians ---
+perm <- replicate(10000, {
+  shuffled <- sample(grp)                          # shuffle 50 labels under H0
+  median(wait[shuffled == "Express"]) - median(wait[shuffled == "Standard"])
+})
+perm_p <- mean(abs(perm) >= abs(obs_med))          # two-sided perm p ~= 0.02
+
+# --- Method 2: Wilcoxon rank-sum / Mann-Whitney (shown for its statistic) ---
+# wilcox.test(wait ~ grp)  ->  p ~= 0.01;  P(Express wait < Standard wait) ~= 0.72
+
+# --- Interval: bootstrap percentile CI for the difference in medians ---
+boot <- replicate(10000, {
+  e <- sample(express_waits,  replace = TRUE)
+  s <- sample(standard_waits, replace = TRUE)
+  median(e) - median(s)
+})
+ci <- quantile(boot, c(0.025, 0.975))              # percentile 95% CI ~= (-10, -2)
+
+# --- Sensitivity check: drop the single longest Standard wait, re-run ---
+# perm_p stays ~0.02, CI still excludes 0  ->  conclusion holds.
+
+# obs_med = -6   perm_p = 0.02   rank-sum p = 0.01   CI = (-10, -2)
+
+# ============================================================
+# REPORT B — Dataset D: does engagement predict wellbeing gain,
+#   when two contaminating points are present?
+# Data shape: clean line gain ~ 2 + 1.5*sessions spoiled by a
+#   high-leverage point (sessions 20, gain 2) and a vertical
+#   outlier (sessions 5, gain 40). n = 40. Synthetic; seed set.
+# ============================================================
+
+# --- Method 1: ordinary least squares ---
+ols <- lm(gain ~ sessions)                         # OLS slope ~= 0.6 (distorted)
+
+# --- Method 2: robust regression (Theil-Sen / Huber, shown as the idea) ---
+# MASS::rlm(gain ~ sessions)        Huber M-estimate slope ~= 1.4
+# Theil-Sen (median of pairwise slopes)              slope ~= 1.45
+
+# --- Sensitivity check: refit OLS without the high-leverage point ---
+# OLS-without-leverage slope ~= 1.5  (matches the clean structure)
+
+# OLS slope = 0.6   robust slope ~= 1.45   clean slope ~= 1.5
+```
+
+Read each result and name its ladder move. The permutation $p \approx 0.02$ **assumes** the 50 waits
+are exchangeable under the null, **resamples** by shuffling the group labels, **protects against** the
+non-normal skew that would unsettle a t-test, and **cannot prove** that Express *causes* shorter waits
+unless the workflow was randomly assigned. The rank-sum $p \approx 0.01$ with $\hat P(\text{Express} <
+\text{Standard}) \approx 0.72$ **assumes** exchangeability, **ranks** the pooled waits, **protects
+against** the long-tail leverage on the mean, and **cannot prove** a difference *in means* — it is a
+stochastic-shift statement, the probability that a random Express wait is shorter than a random
+Standard one. The bootstrap percentile CI $\approx (-10, -2)$ minutes **assumes** the sample stands in
+for the population and the median's sampling distribution is well approximated by resampling,
+**resamples** each group with replacement, **protects against** distributional assumptions on the
+shape, and **cannot prove** anything about extremes (the bootstrap badly understates uncertainty for a
+maximum — never report a bootstrap interval for the longest wait). On Dataset D, the OLS slope $0.6$
+versus the robust slope $\approx 1.45$ is the whole report: least squares minimizes squared residuals,
+so the single high-leverage point dominates and **flattens** the line; the robust fit **downweights**
+it and recovers the clean slope $\approx 1.5$. The sensitivity refit — OLS without the leverage point,
+slope $\approx 1.5$ — confirms the contamination, not the relationship, was driving the gap.
+
+## Reproducible-file convention
+
+A report is only as trustworthy as it is reproducible. The convention for this workshop, and for the
+applied robust-methods project, is one self-contained Quarto report file that someone else can re-run
+and get your exact numbers.
+
+- **One `.qmd` per report.** Each report is a single Quarto document that holds the question, the
+  code, the output, and the prose conclusion together — no loose scripts whose output you pasted in by
+  hand. (In the live course the code chunks run; in this static draft the R is shown as
+  non-executed `r` fences so the site renders R-free.)
+- **`set.seed(45203)` at the top.** Every report that draws randomness — and a resampling report
+  always does — fixes the seed once, near the top, so the permutation $p$, the bootstrap SE, and the
+  bootstrap CI are reproducible to the digit. A resampling result you cannot reproduce is a result you
+  cannot defend.
+- **Named files, clear structure.** Use descriptive names — `report-W-wait-times.qmd`,
+  `report-D-engagement-gain.qmd`, and a `data/` folder for the (synthetic) inputs — so a reader can
+  tell what each file does without opening it. One question per file.
+- **The report template sections.** Inside the `.qmd`, write the same six stages every time, as
+  headed sections, so any reader knows where to look:
+
+  ```
+  ---
+  title: "Express vs Standard service wait times — a method report"
+  ---
+
+  ## Question        # one sentence: the comparison and the outcome
+  ## Data and shape  # the plot + a sentence describing skew / outliers / scale
+  ## Methods         # the >= 2 reasonable methods, and WHY the shape justifies them
+  ## Results         # each number, interpreted, with its assumption-ladder move
+  ## Sensitivity     # what you perturbed; whether the conclusion survived
+  ## Conclusion      # supported claim in method language + explicit bounds
+  ```
+
+Keep the same skeleton across reports. When the structure is fixed, the reader spends their attention
+on your *reasoning* — the part that actually varies — instead of decoding your layout. The template is
+not bureaucracy; it is what makes the honesty checkable, because the **Sensitivity** and **Conclusion**
+sections are always present and always findable.
+
+## Debugging
+
+The failures in this week are not syntax errors — the code runs fine. They are **analysis-and-report**
+failures, where a clean computation produces a misleading report. Here are the common ones and the
+fix.
+
+**Failure 1 — the conclusion overgeneralizes (Risk 15, this week's mistake).** The report writes "the
+Express workflow reduces wait times" full stop, or worse "Express is better for everyone." The
+analysis supports only a *bounded* claim: for these synthetic Riverside arrivals, Express waits were
+**stochastically shorter** (rank-sum $p \approx 0.01$, $\hat P(\text{Express} < \text{Standard})
+\approx 0.72$), with a difference in medians around $-6$ minutes, $95\%$ CI roughly $(-10, -2)$. It
+does **not** support a causal claim unless the workflow was randomly assigned, and it does **not**
+generalize to other clinics or to the longest waits (the tail the bootstrap cannot speak to). *Fix:*
+write the conclusion in the method's own language and append the limits explicitly — bound it by what
+the data and methods support, and let the sensitivity check carry some of that burden.
+
+**Failure 2 — deleting an outlier silently.** On Dataset D, a tempting "fix" is to drop the
+$\text{gain} = 40$ vertical outlier or the high-leverage entry so OLS "behaves," and report the cleaned
+slope without saying so. That is data manipulation, not analysis. *Fix:* never auto-delete. Keep every
+point, report the robust fit alongside OLS, and make the with/without comparison the **sensitivity
+check** itself — the disagreement between OLS ($0.6$) and the robust slope ($\approx 1.45$) is the
+finding, not an inconvenience to hide.
+
+**Failure 3 — permuting or resampling the wrong thing.** Two classic errors: shuffling labels when the
+data are **paired** (which destroys the pairing that the analysis depends on), or resampling
+**rows** when a dependence structure must be preserved. On Dataset W the two groups are independent, so
+shuffling the 50 labels is correct; on a paired design you would permute *within pairs* instead. *Fix:*
+before you `sample()`, state in one sentence what the null makes exchangeable, and shuffle exactly
+that — no more, no less.
+
+**Failure 4 — reading a rank or bootstrap result as something it is not.** Reporting the rank-sum as a
+"difference in means," or treating the bootstrap percentile interval as "assumption-free truth."
+*Fix:* the rank-sum is a **stochastic shift** / probability-of-superiority statement; the bootstrap CI
+**assumes** the sample represents the population and **fails** for extremes and tiny $n$.
+Assumption-light is never assumption-free — name the assumption every time.
+
+**Failure 5 — an unreproducible report.** The seed is missing or set after the resampling, so re-running
+gives a different $p$. *Fix:* `set.seed(45203)` once, near the top, before any `sample()` /
+`replicate()` / bootstrap call.
+
+## AI Use Note
+
+AI tools may help you *draft and check* a report, but they cannot be the analyst — every number and
+every bounded claim is yours to verify. Treat AI output as a draft to audit, not an answer to trust,
+and disclose its use. The course discipline is unchanged: you own the assumption-ladder reasoning.
+
+| Tool | Purpose | Verification |
+|------|---------|--------------|
+| LLM chat assistant | Draft the prose of the **Conclusion** and tighten the **Question** sentence | Re-read against the actual results; confirm the claim is bounded (no overgeneralizing) and matches the method language — rewrite any sentence the data do not support |
+| AI coding assistant | Scaffold the `.qmd` report template and the permutation / bootstrap loop idioms | Run it yourself with `set.seed(45203)`; confirm it shuffles/resamples the *right* thing and reproduces the locked numbers; never paste code you cannot read |
+| Grammar / style checker | Polish wording and wrapping in the report prose | Confirm it changed no number, statistic, or hedge; an edit that drops a limit or a "for data like these" is a content change, not a style fix |
+| Plot / figure helper | Suggest a data-shape plot for the **Data and shape** section | Check the plot shows the real shape (skew, the outliers) and is not smoothed into looking clean; the plot must justify the methods you chose |
+
+## Reading and source pointer
+
+This week is grounded in the **instructor notes** (the primary course materials) on assembling and
+communicating an applied analysis, with **ModernDive** (Ismay, Kim & Valdivia) on **reproducible
+reports and communicating results** for the report workflow — the reproducible Quarto posture and the
+discipline of letting the data shape drive the method choice and the write-up. *These notes are the
+course's own synthesis, grounded in but not copied from the sources.* No prose, examples, exercises,
+figures, or solutions are reproduced from any source.
+
+## Evidence and verification status
+
+**verified: false.** The report workflow and the assumption-ladder reasoning on this page are
+course-authored, but every numeric value here is **drafted, synthetic, and not independently checked**
+— the Dataset W difference in medians $-6$ minutes, the permutation $p \approx 0.02$, the rank-sum
+$p \approx 0.01$ and probability of superiority $\approx 0.72$, the bootstrap percentile CI
+$\approx (-10, -2)$ minutes, and the Dataset D OLS slope $\approx 0.6$ versus robust slope
+$\approx 1.45$ (and clean slope $\approx 1.5$). All data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Portfolio connection
+
+The report file you build this week is the prototype for your **applied robust-methods project**, and
+it belongs in your **portfolio** as evidence that you can take a method comparison all the way to a
+clear, honestly-bounded write-up. Keep your two workshop reports — the Dataset W skew report and the
+Dataset D contamination report — plus the one on a dataset you chose, as portfolio artifacts. Each one
+should show the same six-stage backbone (question → data shape → two methods → comparison → sensitivity
+→ bounded conclusion), so the portfolio demonstrates not a single result but a **repeatable, defensible
+workflow**. When you assemble the portfolio, the reproducible `.qmd` (with its `set.seed(45203)`) and
+the AI Use Note travel *with* the report — they are part of the evidence that the work is yours,
+reproducible, and bounded by what the data support.
+
+## See also
+
+- [Week 12 — Comparing parametric and nonparametric conclusions](week-12-comparing-parametric-and-nonparametric-conclusions.qmd)
+  — the method-comparison logic this report packages.
+- [Week 13 — Simulation study of method behavior](week-13-simulation-study-of-method-behavior.qmd)
+  — why no method wins everywhere, the evidence behind "two reasonable methods."
+- [Week 6 — Bootstrap confidence intervals](week-06-bootstrap-confidence-intervals.qmd)
+  — the percentile CI you attach in Report A, and the extremes it cannot bound.
+- [Week 11 — Robust regression ideas](week-11-robust-regression-ideas.qmd)
+  — OLS vs Theil–Sen / Huber under contamination, the engine of Report B.
+- [Lab 13 — A method-comparison simulation](../labs/lab-13-a-method-comparison-simulation.qmd)
+  — the companion lab whose simulation backs your method choices.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide for picking
+  your two reasonable methods from the data shape.
+- [Methods glossary](../resources/methods-glossary.qmd) — permutation, rank-sum, bootstrap CI, robust
+  regression, and the assumption-ladder vocabulary.

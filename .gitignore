@@ -1,0 +1,45 @@
+# --- Quarto build artefacts ---------------------------------------
+/.quarto/
+/_site/
+/_freeze/
+**/*.quarto_ipynb
+
+# --- OS junk ------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# --- Private course-build machinery -------------------------------
+# This public repo was assembled from a PRIVATE diagnostic course
+# build in the Drive teaching workspace. The directories below belong
+# to that private build and must never appear here. If any reappears,
+# treat it as a mistake and remove it before committing.
+/_state/
+/assessment_shadow/
+/source_text/
+/run_reports/
+/specs/
+/private_output/
+/accessibility/
+/export/
+/bank/
+/builder/
+/private/
+/private_assessments/
+/keys/
+/answer_keys/
+/exams/
+/quizzes/
+
+# --- Filename patterns for stray private artifacts ----------------
+*_key.*
+*_key_*.*
+*_student.*
+*answer_key*
+*.RData
+*.rds
+*.sas7bdat
+
+# --- Local-only editor / IDE / R / SAS droppings ------------------
+.Rhistory
+.Rproj.user/
+.vscode/

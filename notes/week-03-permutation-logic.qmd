@@ -1,0 +1,387 @@
+---
+title: "Week 3 — Permutation logic"
+subtitle: "Under the null, what stays fixed and what is exchangeable — and what does shuffling test?"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "IMS (Çetinkaya-Rundel & Hardin), foundations of inference via randomization/permutation — supports permutation logic"
+toc: true
+---
+
+## The week question
+
+Last week you treated the data as their own distribution — an ECDF, order statistics, a median, a
+set of ranks — without leaning on a normal model. This week you put that empirical stance to work to
+answer a comparison question, and the question is sharper than it first looks. You observe that the
+Express intake workflow has a lower median wait than the Standard workflow — a gap of $-6$ minutes.
+Could a gap that size have appeared just by the luck of who happened to land in which group, even if
+the two workflows are really interchangeable? The week's question is: **under the null that the group
+label does not matter, what stays fixed and what is free to be shuffled — and what, exactly, does the
+shuffling test?**
+
+The answer is the engine for the next several weeks. You build a reference distribution not from a
+formula in a table but by **relabeling the data under the null**, recomputing the statistic each
+time, and reading where the real result falls. No normal curve, no $t$ table — just the data, a
+shuffle, and a tail.
+
+## Why this matters
+
+Most of intro statistics hands you a test statistic and a theoretical null distribution to compare it
+against: a $t$ with its degrees of freedom, a $\chi^2$, a $z$. Those distributions are *derived under
+assumptions* — most often that the data are normal, or that the sample is large enough for a normal
+approximation to hold. When the data are right-skewed with a couple of very long waits, as Dataset W
+is, those assumptions wobble, and a tail probability read off a normal-based curve can be wrong in a
+direction you cannot see.
+
+Permutation logic sidesteps the wobble by building the null distribution from the data themselves. If
+the group label is truly irrelevant — if "Express" and "Standard" are just arbitrary tags pinned to
+$50$ wait times that would have been what they were regardless — then any reshuffling of those tags is
+*as good a draw* as the one you actually observed. The collection of statistics you get from all those
+reshufflings *is* the null distribution, manufactured rather than assumed. That is why this matters: it
+is the cleanest expression of the course's whole stance. You are trading a distributional assumption
+for an **exchangeability** assumption, and exchangeability is often far easier to defend — and far
+easier to state honestly — than normality. But "easier to defend" is not "free." Assumption-light is
+never assumption-free, and a permutation test still assumes something specific. Naming that something
+is half the lesson.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- State the **null hypothesis** a permutation test encodes — that the group label is irrelevant, so the
+  outcomes are **exchangeable** across labels — and say it in plain words.
+- Identify, for a two-group comparison, **what stays fixed** (the pooled outcomes, the group sizes) and
+  **what gets shuffled** (the labels), and explain why it is the *labels* and not the outcomes.
+- Build a **permutation reference distribution** for a chosen statistic — here the difference in
+  **medians** — by repeated relabeling, and read its center and spread.
+- Compute and interpret a **two-sided permutation $p$-value** as the fraction of shuffled statistics at
+  least as extreme as the observed one.
+- Name the assumption-ladder move for a permutation test: what is **assumed** (exchangeability under the
+  null), what is **resampled** (the labels, without replacement), what it **protects against**
+  (dependence on a normal model), and what it **cannot prove** (that any difference you see is causal,
+  or that the groups differ only in location).
+
+## Core vocabulary
+
+- **Null hypothesis (of no label effect)** — the claim that the group label carries no information about
+  the outcome, so the two groups are draws from the **same** distribution; the wait a person had would
+  have been the same under either label.
+- **Exchangeability** — under that null, the joint distribution of the outcomes is unchanged by any
+  permutation of the labels; every relabeling is equally likely. This is the assumption a permutation
+  test rests on.
+- **Test statistic** — the single number that summarizes the comparison. This week it is the
+  **difference in medians**, $\tilde x_T - \tilde x_C$, chosen because the median resists the long right
+  tail that destabilizes the mean.
+- **Permutation (reshuffling)** — drawing a new assignment of labels to the pooled outcomes **without
+  replacement** — each outcome keeps its value but may get a new tag — and recomputing the statistic.
+- **Permutation reference distribution** — the distribution of the test statistic across many
+  permutations; the null distribution **built from the data**, not assumed from a formula.
+- **Permutation $p$-value** — the fraction of permuted statistics at least as extreme (in the relevant
+  direction, here both tails) as the observed statistic; the tail of the reference distribution.
+- **Pooled sample** — the $50$ wait times combined into one bag, holding the *multiset* of outcomes
+  fixed while only the labels move.
+
+## Concept development
+
+### What is fixed and what is exchangeable
+
+Start from the null and let it tell you what to shuffle. The null says the label "Express" or "Standard"
+is a meaningless sticker: a person's wait would have been the same number of minutes no matter which
+sticker they wore. If that is true, then the $50$ wait times are just $50$ numbers, and the particular
+way the labels were handed out — $25$ "Express," $25$ "Standard" — is one arbitrary deal of the deck. Any
+other deal of $25$-and-$25$ labels onto the same $50$ numbers is, under the null, **equally plausible**.
+
+So two things stay **fixed** across every permutation: the **pooled multiset of outcomes** (the actual
+$50$ wait times, with their values intact) and the **group sizes** ($n_T = 25$, $n_C = 25$). One thing is
+**exchangeable** and therefore shuffled: the **labels**. You never change a wait time; you only change
+which group each wait is *counted in*. This is the load-bearing distinction of the week. The data — the
+realized outcomes — are evidence and stay put. The labels are the hypothesis under test, and the null
+says they are arbitrary, so they are exactly what you are licensed to scramble.
+
+Why labels and not outcomes? Because the null is a statement *about the labels*. It says the labels do
+not matter. To see what "labels not mattering" would produce, you generate worlds in which the labels are
+assigned at random and watch the statistic. If you instead shuffled or resampled the *outcomes*, you would
+be testing a different, vaguer claim and would lose the tight logical grip the permutation gives you. Keep
+the outcomes fixed; let the labels move.
+
+Nothing here invokes a normal distribution, a variance formula, or a degrees-of-freedom count. The right
+tail of Dataset W — those two long waits near $64$ and $88$ minutes — is allowed to be exactly as ugly as
+it is, because it is carried along untouched inside the pooled bag. That is the protection a permutation
+test buys: it is **distribution-free** in the sense that the reference distribution is generated from the
+observed values, whatever shape they have.
+
+### The statistic and the locked observed value
+
+You must pick a statistic before you shuffle, and the choice encodes what kind of difference you care
+about. This week the statistic is the **difference in medians**,
+
+$$
+T = \tilde x_T - \tilde x_C ,
+$$
+
+where $\tilde x_T$ is the Express median and $\tilde x_C$ the Standard median. The median is the right
+choice here precisely because Dataset W is right-skewed: the mean difference of $-7$ minutes is yanked
+around by the two very long Standard waits, while the **median difference is resistant** to them.
+
+For the observed data — Express median $= 12$ minutes, Standard median $= 18$ minutes — the observed
+statistic is
+
+$$
+T_{\text{obs}} = 12 - 18 = -6 \text{ minutes.}
+$$
+
+Express waits are shorter by $6$ minutes *at the middle of the distribution*. Read it as a location
+shift in the resistant center, not as a statement about averages or about every individual: the median
+move is what survives the skew. That sentence is the interpretation; the assumption-ladder move is that
+you have **assumed** nothing yet beyond "the median is the summary I care about" — the null and the
+shuffle come next.
+
+### Building the reference distribution by relabeling
+
+Now manufacture the null distribution. Pool the $50$ waits into one bag. Draw a fresh random assignment
+of labels — $25$ get tagged "Express," the other $25$ "Standard" — **without replacement**, so it is a
+genuine reshuffle of the same $50$ numbers, not a resample. Recompute the difference in medians for that
+relabeling. Repeat about $10{,}000$ times. The $10{,}000$ recomputed differences are the **permutation
+reference distribution**: the spread of median-gaps the data could produce *when the label genuinely
+does not matter*.
+
+Two features of that distribution are locked and worth reading. First, it is **centered at $0$**. That is
+not a coincidence — it is the signature of the null. If the label is arbitrary, then on average relabeling
+should make the two group medians the same, so the typical difference is zero. A reference distribution
+that did not center near zero would be a sign you had shuffled the wrong thing (more on that in the common
+mistake). Second, it has a **finite spread** set entirely by the $50$ observed values and the group sizes
+— no $\sigma$, no standard-error formula. Because the statistic is a difference of medians, the
+distribution is also a little **lumpy**: medians of a $25$-value group can only land on a limited set of
+order-statistic values, so the permuted differences pile up on a grid rather than forming a smooth curve.
+That lumpiness is honest, and it is exactly the kind of texture a normal approximation would paper over.
+
+Then you place the real result, $T_{\text{obs}} = -6$, against this distribution and ask how far into the
+tail it sits. Here it sits **out in the tail** — a median gap of $6$ minutes or more (in either direction)
+is uncommon among the reshuffles. Quantifying "uncommon" is the $p$-value, next.
+
+### Reading the permutation p-value
+
+The **two-sided permutation $p$-value** is the fraction of the $\approx 10{,}000$ permuted statistics that
+are at least as extreme as the observed one, counting both tails because you did not pre-commit to a
+direction:
+
+$$
+p = \frac{\#\{\,|T^{\ast}| \ge |T_{\text{obs}}|\,\}}{\text{number of permutations}} .
+$$
+
+For Dataset W this fraction is
+
+$$
+p \approx 0.02 .
+$$
+
+Interpret it carefully. About $2\%$ of the relabelings produced a median gap as large as $6$ minutes (in
+absolute value) **when the label was made irrelevant by construction**. So a gap this big is hard to get
+from labeling-luck alone; that is evidence against the null that the workflows are interchangeable. Notice
+what the number is and is not. It is a **tail probability of a distribution you built from the data** — a
+direct statement about how surprising $-6$ is under exchangeable labels. It is **not** the probability the
+null is true, and it is **not** a verdict that the Express workflow *caused* shorter waits. This is an
+observational comparison this week; the *causal* reading waits for next week's randomization framing,
+where the shuffle mimics an actual random-assignment mechanism rather than a mere exchangeability
+assumption.
+
+Name the full assumption-ladder move. You **assumed** exchangeability of the outcomes across labels under
+the null. You **resampled** the labels — without replacement, $\approx 10{,}000$ times — to build the
+reference distribution. The test **protects against** dependence on a normal model: the skew and the long
+tail are carried through untouched, so the $p$-value does not inherit a normality error. And it **cannot
+prove** that the difference is causal, nor that the two distributions differ *only* in location — a
+permutation test of the difference in medians is sensitive to a location shift, but a significant result
+strictly rejects "identical distributions," and you should report it as such rather than overclaiming a
+clean mean-or-median-only shift.
+
+## Worked examples
+
+### Worked example — Dataset W: shuffle the 50 labels (recurring slice)
+
+**What is assumed.** Under the null, the Express/Standard label is irrelevant, so the $50$ wait times are
+exchangeable across the two labels. Data are synthetic; seed set. The statistic is the difference in
+medians; the observed value is $T_{\text{obs}} = 12 - 18 = -6$ minutes.
+
+**The computation.** Pool the $50$ waits, shuffle the $50$ labels without replacement, recompute the
+median difference, repeat $\approx 10{,}000$ times, and read the tail. The static R below shows the idiom.
+It is teaching code and is **not executed** here.
+
+```r
+set.seed(45203)
+
+# Dataset W: 50 service waits (minutes), 25 Express + 25 Standard.
+# Synthetic; right-skewed with two long Standard waits (~64, ~88 min).
+# (Outcomes summarized to their locked medians for this static slice:
+#  Express median = 12, Standard median = 18.)
+wait  <- c(express_waits, standard_waits)            # 50 pooled wait times (fixed)
+label <- rep(c("Express", "Standard"), each = 25)    # the 50 group labels
+
+med_diff <- function(w, g) {
+  median(w[g == "Express"]) - median(w[g == "Standard"])
+}
+
+T_obs <- med_diff(wait, label)                       # observed -> 12 - 18 = -6 min
+
+# Permutation reference distribution: shuffle the LABELS, keep waits fixed.
+perm <- replicate(10000, {
+  shuffled <- sample(label)                          # relabel WITHOUT replacement
+  med_diff(wait, shuffled)                           # recompute the SAME statistic
+})
+
+# perm is centered at 0; T_obs = -6 sits in the tail.
+p_two_sided <- mean(abs(perm) >= abs(T_obs))         # -> ~0.02
+
+# T_obs = -6 min   center(perm) ~= 0   two-sided permutation p ~= 0.02
+```
+
+**The interpretation.** The reference distribution centers at $0$ because, with the label scrambled, the
+two medians are equal on average; the observed $-6$ minutes lands in its tail, and only about $2\%$ of
+reshuffles match or exceed it in size. So a median wait gap of $6$ minutes is unlikely to be a fluke of
+who-got-which-label: $p \approx 0.02$ is evidence against the workflows being interchangeable. On the
+assumption ladder: you **assumed** exchangeability, **shuffled the labels** (not the waits, and without
+replacement), **protected against** the normality error the skewed tail would inject into a $t$-based
+$p$-value, and you **cannot** conclude from this alone that Express *caused* the drop — that reading
+needs the random-assignment story of next week.
+
+### Worked example — a germination-time trial (transfer, new context)
+
+**What is assumed.** A horticulture lab compares **days to germination** for seeds given a new
+priming soak (treatment) versus a plain water soak (control). It records $9$ treated and $9$ control
+seeds — a small, right-skewed batch with one slow control seed that took unusually long. Under the null,
+the soak label is irrelevant, so the $18$ germination times are exchangeable across labels. These numbers
+are illustrative and distinct from Dataset W. The statistic is again the **difference in medians**, chosen
+because the one very slow seed would distort a mean.
+
+**The computation.** Suppose the treated median is $5$ days and the control median is $8$ days, so the
+observed statistic is $T_{\text{obs}} = 5 - 8 = -3$ days. With only $18$ seeds there are
+$\binom{18}{9} = 48{,}620$ distinct relabelings — few enough to enumerate exactly, though you can also
+approximate by sampling shuffles, as below.
+
+```r
+set.seed(45203)
+
+# Germination trial: 9 primed + 9 control seeds, days to germination.
+# Synthetic; one slow control seed makes the batch right-skewed.
+days  <- c(primed_days, control_days)                # 18 pooled times (fixed)
+label <- rep(c("Primed", "Control"), each = 9)       # the 18 labels
+
+med_diff <- function(d, g) {
+  median(d[g == "Primed"]) - median(d[g == "Control"])
+}
+
+T_obs <- med_diff(days, label)                        # observed -> 5 - 8 = -3 days
+
+perm <- replicate(10000, {
+  shuffled <- sample(label)                           # shuffle labels, days fixed
+  med_diff(days, shuffled)
+})
+
+p_two_sided <- mean(abs(perm) >= abs(T_obs))          # tail fraction (illustrative)
+
+# T_obs = -3 days   center(perm) ~= 0   p = tail fraction of the reference dist.
+```
+
+**The interpretation.** The *design move* is identical to Dataset W — pool the outcomes, hold the
+$18$ days fixed, shuffle only the soak labels, recompute the median difference, read the tail — and only
+the context, the sample size, and the numbers changed. The reference distribution again centers at $0$
+under the null, and the observed $-3$ days reads as a resistant location shift toward faster germination
+under priming. Two transfer-specific notes belong in the report. First, with $n = 18$ the permutation
+distribution is **coarse**: there are only so many distinct median gaps, so the $p$-value lands on a
+discrete grid and you should quote it as approximate. Second, the same assumption ladder applies — you
+**assumed** exchangeability, **shuffled the labels** without replacement, **protected against** a
+normality error from the one slow seed, and **cannot** claim a causal effect unless the soak was randomly
+assigned to seeds. Same logic, new soil.
+
+## A common mistake
+
+This week's classic error is **permuting the wrong thing** (Risk 1, Risk 2). It comes in two flavors, and
+both quietly break the test.
+
+The first flavor is **shuffling the outcomes instead of the labels** — or, worse, **resampling the
+outcomes with replacement** and calling it a permutation. The null hypothesis is a statement about the
+*labels*: it says the label does not matter. The correct way to see what "the label does not matter"
+produces is to scramble the labels across the fixed pool of outcomes — **without replacement**, so every
+permutation reuses the same $50$ values exactly once. If you instead shuffle or bootstrap-resample the
+waits, you are no longer testing the label's relevance; you have built a different reference distribution
+that does not match the null you wrote down, and your $p$-value answers a question you did not ask. A
+quick diagnostic: a correct permutation reference distribution for a difference statistic **centers at
+$0$**. If yours does not, you have almost certainly permuted the wrong object or held the wrong thing
+fixed.
+
+The second flavor is **smuggling in an assumption the permutation test does not need** — most often
+assuming **normality**. Students sometimes report a permutation $p$-value but then justify the median
+choice, or the tail reading, by appealing to a bell curve "to be safe." There is no bell curve here, and
+invoking one misstates what the method does. The whole point is that **nothing about normality is
+assumed**: the skewed tail of Dataset W is carried untouched through every reshuffle, and the reference
+distribution's shape is dictated by the data, not by $\mathcal{N}(0, \sigma^2)$. The honest assumption to
+name is **exchangeability under the null**, full stop — not normality, not equal variances, not a large
+$n$. Claiming the test is "assumption-free" is the mirror error: it still assumes exchangeability, and
+that assumption can fail (for instance, if the two groups differ in *spread* but not *center*, a
+difference-in-medians permutation test may mislead). Name the one assumption you do make; do not borrow
+one you do not need.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence, state the null hypothesis a permutation test of Dataset W encodes, using the word
+   *exchangeable*.
+2. For the Dataset W test, list what stays **fixed** across permutations and what gets **shuffled**, and
+   say in one sentence why it is the labels and not the waits that move.
+3. A classmate builds a reference distribution by resampling the $50$ waits **with replacement** and
+   recomputing the median difference. Name what is wrong, and predict one way their reference distribution
+   would look different from a correct one.
+4. The permutation reference distribution for Dataset W is centered at $0$. Explain why that center is the
+   *signature of the null*, not a lucky accident.
+5. The two-sided permutation $p \approx 0.02$. Write one sentence interpreting it that does **not** say
+   "the probability the null is true," and one sentence saying what the test **cannot** conclude about
+   causation.
+6. Suppose you switched the statistic from the difference in **medians** to the difference in **means**.
+   Name one way the observed statistic and the reference distribution would change given Dataset W's two
+   long waits, and which statistic you would trust more here and why.
+
+## Reading and source pointer
+
+This week is grounded in the instructor notes (the primary course materials) for permutation logic and
+the exchangeability framing, with the **IMS** (Çetinkaya-Rundel & Hardin) treatment of the **foundations
+of inference via randomization and permutation** for the concept sequence — building a null distribution
+by relabeling the data and reading its tail. *These notes are the course's own synthesis, grounded in but
+not copied from the sources.* No prose, examples, exercises, figures, or solutions are reproduced from any
+source.
+
+## Evidence and verification status
+
+**verified: false.** The permutation logic on this page is course-authored, but every numeric value here
+is **drafted, synthetic, and not independently checked**. The load-bearing numbers are the Dataset W
+slice — Express median $= 12$ and Standard median $= 18$ minutes, the observed difference in medians
+$T_{\text{obs}} = -6$ minutes, the permutation reference distribution centered at $0$ over $\approx
+10{,}000$ relabelings, and the two-sided permutation $p \approx 0.02$ — together with the illustrative
+germination-trial transfer values ($-3$ days). All example data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we keep the very same shuffle machinery — pool the outcomes, scramble the labels, recompute the
+statistic — but we change the *story* it tells. If the Express workflow had been **randomly assigned** to
+arrivals, then reshuffling the labels mimics the actual assignment mechanism, and the test stops being a
+mere exchangeability argument and starts licensing a **causal** reading: a randomization $p \approx 0.02$
+for the same $-6$-minute gap. The arithmetic is identical; the warrant is stronger. Note the calendar:
+Labor Day falls on **Mon Sep 7**, so week 3 runs **W/F compressed** — plan the two meetings accordingly.
+
+## See also
+
+- [Week 2 — Order statistics, ranks & empirical distributions](week-02-order-statistics-ranks-and-empirical-distributions.qmd)
+  — the median, ranks, and the ECDF this week's statistic stands on.
+- [Week 4 — Randomization tests](week-04-randomization-tests.qmd) — the same shuffle, now a design-based
+  causal warrant.
+- [Week 8 — Two-sample rank methods](week-08-two-sample-rank-methods.qmd) — a related label-free
+  comparison built on ranks rather than the raw median.
+- [Methods glossary](../resources/methods-glossary.qmd) — exchangeability, permutation distribution,
+  permutation p-value.
+- [Resampling guide](../resources/resampling-guide.qmd) — permutation vs. bootstrap, side by side.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide.

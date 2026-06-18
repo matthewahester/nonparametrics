@@ -1,0 +1,371 @@
+---
+title: "Week 10 — Robust summaries and outliers"
+subtitle: "Which summaries resist contamination, and how to find outliers without auto-deleting them"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "Nonparametric Statistical Methods (Hollander, Wolfe & Chicken), robust-summary vocabulary — optional advanced reference (NAMED/CITED ONLY); instructor notes lead"
+toc: true
+---
+
+## The week question
+
+A single mistyped value, one extreme responder, or a stray sensor reading can drag an average so far
+that it no longer describes the bulk of your data — yet the median sitting next to it barely moves.
+This week's question is the practical core of robustness: **which summaries resist contamination, and
+how do you find the unusual points responsibly — flag and investigate them — rather than quietly
+deleting whatever looks inconvenient?** The course has spent weeks building reference distributions by
+shuffling and resampling; here it shifts to the *estimator* itself and asks how much damage a few bad
+points can do to the number you report.
+
+## Why this matters
+
+Real data are contaminated. A wellbeing-gain spreadsheet collects a transcription slip, a participant
+who improved spectacularly for reasons unrelated to the program, and an entry where the sessions count
+was logged as $20$ when the gain was barely above baseline. If you summarize that column with the
+ordinary **mean** and **standard deviation**, those few points reach in and reshape both numbers — the
+mean is pulled toward the extreme, and the SD is inflated by the squared distance of the outlier. Every
+downstream comparison, interval, and figure then inherits the distortion. The course's signature
+discipline applies directly: the mean is *assumption-light in spirit* but *not resistant in practice*,
+and you have to name that trade.
+
+The deeper reason this matters is that "the data look messy" is not a license to start erasing rows.
+Deleting points changes the answer, and doing it without a recorded reason is one of the fastest ways
+to produce a result that cannot be reproduced or defended. The professional move is to use **resistant
+summaries** — the median, a trimmed mean, the MAD — that already tolerate a chunk of contamination, and
+to use **diagnostics** — the boxplot rule, a $z$-score screen, leverage and Cook's distance — that
+*flag* unusual points for a human to investigate. Robustness is a stance: report a number that does not
+hinge on the three worst values, and treat every flagged point as a question, not a verdict.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Distinguish **resistant** summaries (median, trimmed mean, MAD-based SD, IQR) from
+  **non-resistant** ones (mean, ordinary SD), and say *why* squaring makes the SD fragile.
+- State and use the **breakdown point** — the fraction of contamination an estimator tolerates before it
+  can be driven arbitrarily far — and explain why it is $0$ for the mean and $\approx 0.5$ for the median.
+- Flag candidate outliers with the **boxplot (1.5·IQR) rule** and a **$|z| > 3$** screen, and read what
+  each rule does and does not catch.
+- Distinguish an **outlier** (unusual $y$), a **high-leverage** point (unusual $x$), and an
+  **influential** point (one that *moves the fit*), and name the right diagnostic for each.
+- Explain why you **investigate, never auto-delete**, and state what a robust summary protects against
+  and what it still cannot prove.
+
+## Core vocabulary
+
+- **Resistant (robust) summary** — a statistic whose value changes only a little when a small fraction
+  of the data is replaced by arbitrary values; the median, trimmed mean, MAD, and IQR are resistant.
+- **Median ($\tilde x$)** — the middle order statistic; the prototypical resistant center.
+- **Trimmed mean ($\bar x_\alpha$)** — the mean after discarding the lowest and highest $\alpha$
+  fraction of values; here the **$10\%$ trimmed mean** drops the top and bottom $10\%$, then averages.
+- **Median absolute deviation (MAD)** — the median of $|x_i - \tilde x|$; scaled by $1.4826$ it
+  estimates the SD resistantly (the **MAD-based SD**).
+- **Breakdown point** — the largest fraction of contaminated observations an estimator can tolerate
+  before its value can be pushed to $\pm\infty$; $0$ for the mean, $\approx 0.5$ for the median.
+- **Boxplot (1.5·IQR) rule** — flags any value below $Q_1 - 1.5\,\text{IQR}$ or above
+  $Q_3 + 1.5\,\text{IQR}$ as a candidate outlier.
+- **Outlier / leverage / influence** — an **outlier** has an unusual response $y$; a **high-leverage**
+  point has an unusual predictor $x$; an **influential** point is one whose removal *changes the fit*.
+  These are three different things flagged by three different diagnostics.
+- **Cook's distance** — a single-number summary of how much a point moves the *whole* fitted line;
+  the standard influence diagnostic in regression.
+
+## Concept development
+
+This week works with **Dataset D** — wellbeing **gain** (points) against **sessions attended** ($0$–$20$)
+for $n = 40$ Riverside Wellness participants. The clean structure is roughly
+$\text{gain} \approx 2 + 1.5 \cdot \text{sessions}$, but two contaminating points spoil it: a **vertical
+outlier** at sessions $= 5$ with gain $= 40$, and a **high-leverage** data-entry-style point at sessions
+$= 20$ with gain $= 2$. This week summarizes the **gain column alone**; next week fits the line. All data
+are synthetic; seed set.
+
+### Resistant centers: why the median and trimmed mean hold while the mean slides
+
+Start with the center of the gain column. Three reasonable summaries give three different answers, and
+the spread between them is itself the diagnostic.
+
+$$
+\text{mean} = 11, \qquad \text{median } \tilde x = 8, \qquad \text{10\% trimmed mean } \bar x_{0.10} = 8.3 .
+$$
+
+The **mean** of $11$ is the only one of the three that the $+40$ outlier reaches into. A mean is a balance
+point: move one observation out toward $+40$ and the fulcrum slides with it, because every value
+contributes its full distance to the average. The **median** $\tilde x = 8$ depends only on the *ordering*
+— it is the middle value once the gains are sorted, so replacing the largest value with $40$, or $400$,
+or $4000$ leaves the middle exactly where it was. The **$10\%$ trimmed mean** $\bar x_{0.10} = 8.3$ takes
+a middle road: it throws away the bottom $10\%$ and top $10\%$ of the sorted gains and averages what
+remains, so the $+40$ is discarded before the average is taken, landing the trimmed mean close to the
+median at $8.3$.
+
+The gap between mean $11$ and median $8$ is a **three-point pull** caused by contamination, and that gap
+is information. *What is assumed:* essentially nothing about the shape of the gain distribution — these
+are just summaries of the observed column. *What is downweighted:* the trimmed mean discards the
+extremes outright; the median uses only rank position, so extremes get zero leverage. *What it protects
+against:* a handful of arbitrarily large or small values moving the reported center. *What it cannot
+prove:* that the $+40$ is an error rather than a real, important extreme responder — resistance hides the
+point from the *summary*, it does not adjudicate the point's *truth*. That is why you still investigate.
+
+### Resistant spread: the MAD versus the standard deviation
+
+Spread tells the same story more sharply, because the ordinary SD **squares** every deviation.
+
+$$
+\text{ordinary SD} = 9 \quad(\text{inflated by the }+40), \qquad
+\text{MAD-based SD} \approx 5 \quad(\text{resistant}).
+$$
+
+The ordinary standard deviation sums *squared* distances from the mean. The $+40$ point sits far above the
+others, and squaring that large distance makes it dominate the sum — so the SD reads $9$, much larger than
+the typical participant's distance from the center. The **MAD** instead takes the *median* of the absolute
+deviations $|x_i - \tilde x|$. A median of deviations, like any median, ignores how large the largest
+deviation is; scaling the MAD by $1.4826$ to make it comparable to an SD under normality gives a
+**MAD-based SD $\approx 5$**, which describes the spread of the *bulk* of the data honestly.
+
+The contrast $9$ versus $5$ is the same lesson as $11$ versus $8$, now for scale. *What is assumed:* the
+$1.4826$ scaling assumes roughly normal middle behavior to make the MAD-SD comparable to an SD — name
+that, it is not assumption-free. *What is downweighted:* the median-of-deviations gives the worst point
+no extra weight for being worst. *What it protects against:* a single squared distance inflating your
+reported variability and widening every interval built from it. *What it cannot prove:* that the small
+spread is the "right" one — if the $+40$ is a genuine signal, the resistant $5$ is *under*stating real
+variability. Resistance is a deliberate choice to describe the majority; say so.
+
+### Breakdown point: counting how much contamination a summary survives
+
+The **breakdown point** makes "resistant" precise. It is the largest fraction of the data you can replace
+with arbitrary values before the estimator can be driven to $\pm\infty$.
+
+$$
+\text{breakdown point: } 0 \text{ for the mean}, \qquad \approx 0.5 \text{ for the median}.
+$$
+
+The **mean has breakdown point $0$**: a *single* observation, pushed toward infinity, drags the mean with
+it without bound. One bad value out of a million is still enough — the fraction needed is $1/n \to 0$, so
+the breakdown point is $0$. The **median has breakdown point $\approx 0.5$**: you can corrupt almost half
+the values and the median stays pinned among the remaining good ones, because it only cares which value
+sits in the middle. Only when *more than half* the data are contaminated can the middle itself be
+arbitrary. The $10\%$ trimmed mean sits between, with a breakdown point of $0.10$ — it tolerates up to a
+$10\%$ contamination in each tail, which is exactly the fraction it trims.
+
+So the three centers form a small **assumption ladder of resistance**: mean (breakdown $0$, most
+efficient on clean data) $\subset$ trimmed mean (breakdown $0.10$, a tunable compromise) $\subset$ median
+(breakdown $0.5$, most resistant). *What is assumed:* less and less as you climb. *What it protects
+against:* progressively larger contamination fractions. *What it cannot prove:* which level your data
+actually need — the breakdown point tells you the *worst case* an estimator survives, not whether your
+particular $+40$ is real. You pick a rung to match how contaminated you believe the data are, and you say
+which rung you chose.
+
+### Finding the unusual points: boxplot rule, $|z|>3$, and the leverage/influence trio
+
+Resistant summaries quietly *survive* outliers; **diagnostics** actively *find* them so a human can look.
+
+The **boxplot (1.5·IQR) rule** flags any gain below $Q_1 - 1.5\,\text{IQR}$ or above
+$Q_3 + 1.5\,\text{IQR}$. On Dataset D's gain column, the $+40$ value sits far above the upper fence, so
+the boxplot rule flags it — exactly the point that inflated the mean and SD. A **$|z| > 3$** screen
+computes $z_i = (x_i - \text{center}) / \text{scale}$ and flags any value more than three standard scores
+from the center; the $+40$ also trips this rule. A subtle but important refinement: compute the
+$z$-screen with **resistant** pieces (median and MAD-SD), because using the *ordinary* mean and SD lets
+the outlier inflate its own denominator and mask itself.
+
+The boxplot rule and the $z$-screen both work on a **single column** — they find values with an unusual
+$y$. But Dataset D's *other* contaminating point, at **sessions $= 20$, gain $= 2$**, is not unusual in
+the gain column at all; a gain of $2$ is perfectly ordinary. It is unusual in $x$ — it sits at the far
+edge of the sessions range. That is **high leverage**, and a single-column outlier screen will never catch
+it. To see it you need a **leverage** diagnostic (how far a point's $x$ is from the bulk) or **Cook's
+distance** (how much removing the point moves the *whole fitted line*). This is the trio you must keep
+straight:
+
+- an **outlier** has an unusual $y$ → caught by the boxplot rule and $|z|$ on the response;
+- a **high-leverage** point has an unusual $x$ → caught by a leverage diagnostic;
+- an **influential** point *moves the fit* → caught by **Cook's distance**.
+
+A point can be one, two, or all three. The $+40$ at sessions $= 5$ is a clear $y$-outlier; the
+sessions $= 20$, gain $= 2$ point is high-leverage and, because it is at the edge of $x$ pulling the line
+down, it is also **influential**. Next week's robust regression is where you watch that influence flatten
+the OLS slope from $1.5$ toward $0.6$. *What is assumed:* the diagnostics presume a working model
+(a center-and-spread for the screens, a fitted line for leverage/Cook). *What it protects against:*
+silently letting one point drive a number or a fit. *What it cannot prove:* that a flagged point is an
+*error* — flagging is the start of an investigation, not its conclusion.
+
+## Worked examples
+
+### Worked example — Dataset D's gain column (recurring slice)
+
+**What is assumed.** Nothing about the shape of the gain distribution; these are descriptive summaries of
+the $n = 40$ observed gains, with two known contaminating points present. Data are synthetic; seed set.
+
+**Computation.** The static R below summarizes the gain column with both non-resistant and resistant
+statistics, then flags candidate outliers with the boxplot rule and a resistant $z$-screen. It is shown as
+teaching code and is **not executed** here.
+
+```r
+set.seed(45203)
+
+# Synthetic Dataset D: wellbeing gain (points) for n = 40 participants.
+# Clean structure gain ~ 2 + 1.5 * sessions, residual SD ~ 4, PLUS two contaminants:
+#   - vertical outlier:   sessions = 5,  gain = 40
+#   - high-leverage point: sessions = 20, gain = 2
+sessions <- c(sample(0:18, 38, replace = TRUE), 5, 20)
+gain     <- 2 + 1.5 * sessions + rnorm(40, 0, 4)
+gain[39] <- 40    # the +40 vertical outlier
+gain[40] <- 2     # the high-leverage point's (ordinary) y
+
+# --- Centers: non-resistant vs resistant ---
+mean(gain)                       # mean         -> 11    (pulled up by the +40)
+median(gain)                     # median       -> 8     (resistant center)
+mean(gain, trim = 0.10)          # 10% trimmed  -> 8.3   (drops top/bottom 10%)
+
+# --- Spread: ordinary SD vs MAD-based SD ---
+sd(gain)                         # ordinary SD  -> 9     (inflated by squaring the +40)
+mad(gain)                        # MAD-based SD -> ~5    (resistant; constant 1.4826 applied)
+
+# --- Outlier screens on the y column ---
+qs  <- quantile(gain, c(.25, .75)); iqr <- qs[2] - qs[1]
+fence_hi <- qs[2] + 1.5 * iqr     # upper boxplot fence
+gain[gain > fence_hi]            # boxplot rule flags -> 40
+
+z <- (gain - median(gain)) / mad(gain)   # RESISTANT z-screen (median, MAD)
+which(abs(z) > 3)                # |z| > 3 flags    -> the +40 point
+
+# centers: mean 11 | median 8 | trimmed 8.3   spread: SD 9 | MAD-SD ~5
+# boxplot rule flags the +40; |z|>3 (resistant) flags the +40
+# the sessions=20, gain=2 point is NOT flagged here -- it is HIGH LEVERAGE (unusual x)
+```
+
+**Interpretation.** The gain column's center is reported as **$8$** (median) or **$8.3$** (trimmed mean),
+not $11$ (mean), because the mean is the only summary the $+40$ reaches; the three-point gap between
+mean and median is itself a contamination flag. The spread is **$\approx 5$** (MAD-SD), not $9$
+(ordinary SD), because squaring let the $+40$ dominate the SD. The boxplot rule and the resistant
+$|z| > 3$ screen both flag **the $+40$** — and notably **neither flags** the sessions $= 20$, gain $= 2$
+point, whose gain is perfectly ordinary; that point is **high leverage** in $x$ and would be caught only
+by a leverage or Cook's-distance diagnostic next week. *Assumption-ladder move:* you assumed nothing
+about the gain distribution, you *downweighted* extremes via the median/trim/MAD, you *protected* the
+reported center and spread against the $+40$, but you **cannot prove** the $+40$ is an error — so the
+right next step is to **investigate** it (transcription slip? a genuine extreme responder?), not delete it.
+
+### Worked example — a contaminated lab-measurement series (transfer, new context)
+
+**What is assumed.** A chemistry lab records the concentration (in ppm) of a compound across $24$
+replicate runs of the same sample, expecting a tight cluster. Nothing is assumed about the shape; these
+are descriptive summaries of one measured series, with one suspect reading present. These numbers are
+illustrative and distinct from Dataset D.
+
+**Computation.** Twenty-three runs cluster near $50$ ppm, but run #17 reads $250$ ppm — a tenfold
+spike, the kind a pipetting slip or an air bubble produces. Summarize the series both ways:
+
+$$
+\text{mean} \approx 58 \text{ ppm} \;(\text{pulled up by the spike}), \qquad
+\tilde x = 50 \text{ ppm} \;(\text{resistant center}),
+$$
+
+$$
+\text{ordinary SD} \approx 41 \text{ ppm} \;(\text{inflated}), \qquad
+\text{MAD-based SD} \approx 3 \text{ ppm} \;(\text{resistant}).
+$$
+
+A boxplot rule on the $24$ readings flags run #17 far above the upper fence, and a resistant
+$|z| > 3$ screen — using the median $50$ and MAD-SD $\approx 3$ — gives that reading a score of roughly
+$(250 - 50)/3 \approx 67$, an enormous flag. Note this is a **single-variable** series, so there is no
+$x$ here and therefore no leverage to speak of — every flag is an outlier-in-$y$ flag.
+
+**Interpretation.** The lab should report the concentration as about **$50$ ppm** with a spread of a few
+ppm — the resistant summaries — because the $250$ reading is almost certainly a measurement fault, and the
+mean $58$ and SD $41$ describe a series that does not exist. But "almost certainly" is still an
+**investigation**, not a deletion: the analyst checks the instrument log and the run sheet for #17, records
+*why* it is excluded if it is, and reports both the resistant summary and the reason. The *design move* is
+identical to Dataset D — summarize with resistant statistics, flag the suspect point, investigate before
+acting — only the context and numbers differ. *What it protects against:* one bad run defining the
+reported concentration. *What it cannot prove:* that #17 is an error rather than a real (and alarming)
+spike — only the lab record can settle that.
+
+## A common mistake
+
+The week's central trap is **deleting outliers without justification** (Risk 10), usually braided with
+**confusing outlier, leverage, and influence** (Risk 11).
+
+The deletion trap sounds like: "the $+40$ ruins my mean, so I'll drop it and move on." Three things go
+wrong. First, deleting a point **changes the answer** — the mean returns toward $8$ and the SD shrinks
+toward $5$ — so an undocumented deletion is an undocumented change to your result, and the analysis can no
+longer be reproduced or defended. Second, the point you deleted **might be the real signal**: a
+participant who genuinely improved by $40$ is data, not noise, and erasing them biases the very conclusion
+you are trying to reach. Third, you usually do not *need* to delete anything — the median, trimmed mean,
+and MAD already give you a summary that does not hinge on the $+40$, so you can report a resistant number
+*and* keep every row. The correct posture is **investigate, then decide, then document**: check whether the
+$+40$ is a transcription error or a real extreme; if you exclude it, record the reason in writing; and
+prefer a resistant summary over a quiet deletion whenever you can.
+
+The diagnostic-confusion trap sounds like: "the sessions $= 20$, gain $= 2$ point isn't flagged by the
+boxplot rule, so it's fine." But the boxplot rule only screens the **response** $y$, and that point's gain
+of $2$ is ordinary — it is unusual in **$x$** (high leverage), and it is the point most likely to **move
+the fit** (influence) next week. Using a $y$-outlier rule to clear an $x$-leverage point names the wrong
+diagnostic for the question. Keep the trio straight: a boxplot/$|z|$ screen finds **outliers in $y$**, a
+leverage diagnostic finds **unusual $x$**, and **Cook's distance** finds points that **move the fit**. The
+right diagnostic for "does this point distort my conclusion?" is the influence diagnostic — not the one
+that happens to be easiest to compute.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission.
+
+1. In one sentence each, say why the gain column's **mean** is $11$ but its **median** is $8$, and which
+   number you would report to describe a typical participant — and why.
+2. The ordinary SD is $9$ and the MAD-based SD is $\approx 5$. Explain, using the word "squared," why the
+   ordinary SD is the larger of the two here.
+3. State the breakdown point of the mean, the $10\%$ trimmed mean, and the median, and explain in your own
+   words what "breakdown point $0.5$" means operationally for the median.
+4. The sessions $= 20$, gain $= 2$ point is **not** flagged by the boxplot rule on gain. Name the kind of
+   unusual point it is, and name the diagnostic that *would* flag it.
+5. A classmate computes a $|z| > 3$ screen using the ordinary **mean and SD** and finds the $+40$ point
+   has $z \approx 3.2$ — "just barely an outlier." Explain why a *resistant* $z$-screen (median and MAD)
+   gives a much larger score, and which screen you trust more.
+6. A colleague deletes the $+40$ point with the note "removed an obvious error." Give two reasons this is
+   not yet a defensible step, and state what they should do instead.
+
+## Reading and source pointer
+
+This week is grounded in the **instructor notes** (the primary course materials) for robust summaries,
+outlier diagnostics, and the outlier/leverage/influence distinction. For vocabulary calibration only, the
+relevant topic in **Hollander, Wolfe & Chicken, *Nonparametric Statistical Methods*** is its treatment of
+**robust-summary and distribution-free location/scale vocabulary** — named here as an **optional advanced
+reference**, with the instructor notes leading. *These notes are the course's own synthesis, grounded in
+but not copied from the sources.* No prose, tables, examples, exercises, figures, notation, or solutions
+are reproduced from any source.
+
+## Evidence and verification status
+
+**verified: false.** The method logic on this page is course-authored, but every numeric value here is
+**drafted, synthetic, and not independently checked**. The page's load-bearing numbers are the Dataset D
+gain summaries — **mean $11$, median $8$, $10\%$ trimmed mean $8.3$, ordinary SD $9$, MAD-based SD
+$\approx 5$** — the **breakdown points $0$ (mean) and $\approx 0.5$ (median)**, the boxplot-rule and
+$|z| > 3$ flags on the $+40$ point, the identification of the sessions $= 20$, gain $= 2$ point as
+high-leverage, and the illustrative lab-series transfer numbers (median $50$ ppm, MAD-SD $\approx 3$ ppm,
+mean $\approx 58$, SD $\approx 41$). All data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we keep Dataset D but fit the **line** instead of summarizing the column, and watch the two
+contaminating points do their damage to **least squares**. The high-leverage sessions $= 20$, gain $= 2$
+point flattens the OLS slope from the clean $1.5$ down toward $0.6$, while robust fits — **Theil–Sen**
+(median of pairwise slopes) $\approx 1.45$, a **Huber M-estimator** $\approx 1.4$, and least-absolute-
+deviations $\approx 1.5$ — recover the clean structure by downweighting the bad point instead of letting
+it dominate. The lesson previews itself: the same resistance logic that protected a *summary* this week
+protects a *fit* next week.
+
+## See also
+
+- [Week 9 — Categorical and ordinal outcomes](week-09-categorical-and-ordinal-outcomes.qmd) — respecting
+  the measurement scale, the sibling "don't distort the number" lesson.
+- [Week 11 — Robust regression ideas](week-11-robust-regression-ideas.qmd) — the same contamination, now
+  fitting a line: OLS slope $0.6$ vs Theil–Sen $1.45$.
+- [Week 12 — Comparing parametric and nonparametric conclusions](week-12-comparing-parametric-and-nonparametric-conclusions.qmd)
+  — reporting OLS vs robust honestly side by side.
+- [Methods glossary](../resources/methods-glossary.qmd) — median, trimmed mean, MAD, breakdown point,
+  leverage, influence, Cook's distance.
+- [Robustness and outliers guide](../resources/robustness-and-outliers-guide.qmd) — the resistant-summary
+  and outlier-diagnostic reference, side by side.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide.

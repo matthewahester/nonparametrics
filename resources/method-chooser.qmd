@@ -1,0 +1,236 @@
+---
+title: "Method chooser (decision guide)"
+subtitle: "From a data shape and a question to a defensible method"
+page-type: reference
+toc: true
+---
+
+Keep this page open while you read the notes. It is a decision *guide*, not a flowchart that picks "the" test.
+The single most important habit it teaches runs through every table below: **start from the shape of your data
+and the question you are actually asking, list the candidate methods, and choose one for a stated purpose**. A
+defensible analysis is one where you can say *why this method, here* — what it assumes, what it resamples,
+ranks, or downweights, what it protects against, and what it still cannot prove. The second discipline is the
+one the whole course is built on: **assumption-light is not assumption-free.** A permutation test still assumes
+exchangeability under the null; a bootstrap interval still assumes the sample resembles the population and can
+fail outright at the extremes; a rank test trades the mean for a shift in distribution; a robust fit trades
+efficiency for resistance. Name the trade every time. All numeric values mentioned come from the synthetic
+**Riverside Wellness Program** datasets (seed set, `set.seed(45203)`) and are provisional — the worked numbers are provisional pending review.
+
+The four recurring datasets are referenced throughout by their *shape*, because shape — not subject matter —
+is what drives method choice:
+
+| Dataset | What it holds | Its shape | Where it teaches |
+|---|---|---|---|
+| **W** | Express vs Standard service **wait times** (min), two groups | right-skewed, a few very long waits | two-group comparison, permutation, bootstrap, rank-sum |
+| **S** | before/after **wellbeing score**, same $n = 15$ people | paired, non-normal differences, a zero and one big jump | paired methods (sign, signed-rank) |
+| **L** | program **satisfaction Likert** (1–5) by arm | ordinal, five ordered categories | ordinal/categorical outcomes |
+| **D** | wellbeing **gain** vs sessions attended, $n = 40$ | linear but contaminated by two bad points | robust regression, outliers, influence |
+
+## How to read this guide
+
+The columns below are the course's **assumption ladder**, applied to every candidate method. Before you compare
+$p$-values, fill in these four cells in your head:
+
+| Column | The question it answers |
+|---|---|
+| **Assumes** | What must be true (or approximately true) for this method's claim to hold? |
+| **Resamples / ranks / downweights** | What does the method *do* to the data to weaken a parametric assumption? |
+| **Protects against** | Which specific failure of the standard model does this buy you resistance to? |
+| **Cannot prove** | What is outside this method's reach — what would it be overselling to claim? |
+
+A method is "assumption-light," not "assumption-free," exactly when the **Assumes** cell is short but *not
+empty*. If you ever find yourself writing "no assumptions" in that cell, you have misread the method.
+
+## Step 0 — name the data shape and the question
+
+Two analyses of the same numbers can call for different methods because they ask different questions. Pin down
+both before choosing.
+
+| You observe… | …with this shape | Likely question | Go to |
+|---|---|---|---|
+| two independent groups | skewed / outliers (like **W**) | does the distribution shift between groups? | Two-group, skewed |
+| two independent groups | clean, roughly symmetric, decent $n$ | do the *means* differ? | Two-group, clean |
+| one measurement twice on each unit | non-normal paired differences (like **S**) | did the typical change move off zero? | Paired, non-normal |
+| an outcome on an ordered scale | ordered categories (like **L**) | is one group rated higher? | Ordinal outcome |
+| a response vs a predictor | linear but contaminated (like **D**) | what is the underlying slope? | Contaminated regression |
+| any statistic you want bounded | any shape | how uncertain is this estimate? | Estimating uncertainty |
+
+Each row below opens with the question and the shape, then lays out the candidates side by side. Choose for a
+purpose; do not run all of them and report the smallest $p$.
+
+## Two-group comparison — skewed or outlier-prone (shape: Dataset W)
+
+**Shape and question.** Dataset W is right-skewed: Standard waits have median $18$ min but mean $\approx 22$
+because two long waits near $64$ and $88$ min drag the average up; Express has median $12$, mean $\approx 15$.
+The question is whether the Express *distribution* sits to the left of the Standard one. Because the mean is
+unstable here — the mean difference $15 - 22 = -7$ min moves when those two long waits move — averaging is the
+wrong target, and the candidates below either shuffle, rank, or resample instead.
+
+| Candidate | Assumes | Resamples / ranks / downweights | Protects against | Cannot prove |
+|---|---|---|---|---|
+| **Permutation test** (statistic = difference in medians) | exchangeability of the $50$ labels under the null of no difference | shuffles the $50$ group labels $\approx 10{,}000$ times to build the reference distribution | distributional shape — needs no normality; reads the observed $-6$ against a null centered at $0$ | a *causal* effect (unless labels were randomly assigned) and the size of any effect beyond the chosen statistic |
+| **Wilcoxon rank-sum / Mann–Whitney $U$** | the two distributions differ only by a shift (for the clean shift reading); exchangeability under the null | pools and **ranks** all $50$ waits (mid-ranks for ties); compares rank sums | outliers — a long wait of $88$ becomes just "the largest rank," not an $88$ | a difference in *means*; it estimates $P(\text{Express} < \text{Standard}) \approx 0.72$, a stochastic shift, not minutes |
+| **Bootstrap of the median (difference)** | the sample resembles the population; enough distinct values for the median to vary | **resamples each group with replacement** ($25$ each), recomputes the median difference | the mean's fragility — targets the resistant median directly | a sharp test decision by itself; and it is shaky for extreme order statistics (see below) |
+
+**What each result says.** The permutation $p \approx 0.02$ means a shift as large as the observed $-6$ min is
+rare under pure label-shuffling — the groups differ in distribution. The rank-sum gives $p \approx 0.01$ with
+$\hat P(\text{Express} < \text{Standard}) \approx 0.72$: an Express wait is *usually* shorter, which is the
+honest sentence — not "Express is $6$ minutes faster on average." The bootstrap SE of the difference in medians
+is $\approx 2.0$ min, quantifying how much that $-6$ would wobble across resamples. By contrast a Welch
+$t$-test on these same waits gives $p \approx 0.08$: the tail-inflated SD weakens it, so it *misses* a shift the
+assumption-light methods detect. That gap is the lesson — on skewed, outlier-prone data the lighter methods
+earn their keep.
+
+## Two-group comparison — clean and roughly symmetric (the $t$-test is fine)
+
+**Shape and question.** If the two groups were roughly symmetric, free of extreme outliers, and not tiny, the
+mean is a stable, meaningful target and the question "do the means differ?" is the right one. Here the
+two-sample $t$-test is not a villain — it is the efficient choice, and the assumption-light methods would
+*agree* with it on large, clean, symmetric samples.
+
+| Candidate | Assumes | Resamples / ranks / downweights | Protects against | Cannot prove |
+|---|---|---|---|---|
+| **Two-sample $t$-test** | roughly normal (or large $n$ via the CLT); finite, stable variance | nothing — uses the means and the pooled/Welch SD directly | nothing extra; it is the efficient default *when its assumptions hold* | a valid conclusion when the SD is inflated by outliers — then its $p$ is unreliable (W's $p \approx 0.08$) |
+| **Permutation test on the mean difference** | exchangeability under the null | shuffles labels; recomputes the mean difference | the normality assumption specifically — keeps the mean target but builds the null by shuffling | resistance to outliers (the mean is still the statistic, so one big value still moves every shuffle) |
+
+**Choosing here.** When the shape is clean, prefer the $t$-test for its efficiency and report it plainly. When
+you are unsure the normal model holds but still care about the mean, a **permutation test of the mean
+difference** keeps your target (the mean) while dropping the normality assumption — a small, honest insurance
+step. Reach for ranks or the bootstrap of the median only when the *mean itself* is the wrong summary, as in W.
+The drift to resist: do not run a nonparametric test reflexively "to be safe" when the data are clean and the
+mean is exactly what you want — that needlessly throws away power.
+
+## Paired, non-normal differences (shape: Dataset S)
+
+**Shape and question.** Dataset S measures the same $15$ people before and after. The *pairing* is the
+structure that must be preserved: you analyze the $15$ paired differences (after − before), never the two
+columns as if they were independent groups. Among the $15$ differences, $11$ are positive, $3$ negative, $1$
+zero (drop it, leaving $14$ nonzero); the mean difference $+6$ is pulled up by one large $+30$ improvement,
+while the **median $+4$** is the resistant summary. The question: did the typical change move off zero?
+
+| Candidate | Assumes | Resamples / ranks / downweights | Protects against | Cannot prove |
+|---|---|---|---|---|
+| **Sign test** | under the null, a difference is equally likely $+$ or $-$ (population median difference $= 0$); pairs independent | uses **only the signs** of the differences — counts $11$ of $14$ positive against Binomial$(14, 0.5)$ | every distributional assumption about magnitude — the lightest rung; the $+30$ counts the same as a $+1$ | much power — it ignores *how big* the changes are; here it is borderline, $p \approx 0.057$ |
+| **Wilcoxon signed-rank** | the differences are **symmetric** about their median; pairs independent | **ranks the magnitudes** $\lvert d_i \rvert$, sums the positive ranks $W^+$; uses sign *and* magnitude | non-normality, while recovering power the sign test left on the table | validity if the differences are badly *skewed* (symmetry is its real assumption); and it is not a mean comparison |
+| **Paired $t$-test** | the differences are roughly normal | nothing — uses the mean difference and its SE | nothing extra; efficient when differences are normal | a trustworthy result when one $+30$ outlier inflates the SD and bends normality |
+
+**What each result says.** The sign test's $p \approx 0.057$ is borderline precisely because it spends only the
+signs — the fewest assumptions, the least power. The signed-rank $p \approx 0.02$ is **sharper** because it adds
+magnitude, at the cost of assuming symmetric differences. These three form a clean assumption ladder: **sign
+test $\subset$ signed-rank $\subset$ paired $t$-test**, lightest to heaviest. Choose the lightest rung whose
+assumption you can actually defend — here, if you believe the differences are roughly symmetric, the
+signed-rank is the better-powered honest choice; if you cannot defend symmetry, fall back to the sign test and
+accept the borderline call. The classic error: running an *independent* two-group test on paired data, which
+discards the pairing and the power it buys.
+
+## Ordinal outcome — ordered categories (shape: Dataset L)
+
+**Shape and question.** Dataset L is a $1$–$5$ satisfaction Likert by arm. The categories are **ordered** but
+not evenly spaced: the step from "dissatisfied" to "neutral" need not be the same "amount" as "satisfied" to
+"very satisfied." The cardinal sin is to average the labels. Express counts are $[1, 2, 7, 20, 20]$ and Standard
+$[3, 8, 16, 13, 10]$; Express's median category is $4$ vs Standard's $3$.
+
+| Candidate | Assumes | Resamples / ranks / downweights | Protects against | Cannot prove |
+|---|---|---|---|---|
+| **Rank-based test on the ordinal scores** (Mann–Whitney, mid-ranks) | the categories are *ordered* (uses that order); exchangeability under the null | **ranks** participants by category with **mid-ranks** for the heavy ties | the false precision of treating labels $1$–$5$ as real numbers; uses ordering without assuming spacing | an interval-scale "average rating gap"; it estimates $P(\text{Express} > \text{Standard}) \approx 0.66$ |
+| **Chi-square test of independence** | categories are **unordered** (nominal); expected counts not too small | nothing — compares the full $2 \times 5$ table of counts | nothing about order — it is for *nominal* association | a *directional/ordered* shift — it **throws away the ordering**, so it is less powerful here |
+| **Mean of the numeric codes / $t$-test** | the codes $1$–$5$ are equally-spaced interval measurements | nothing | nothing — and it *assumes away* the ordinal nature | anything defensible: averaging ordinal labels treats unequal steps as equal — avoid it |
+
+**What each result says.** The rank-based test gives $p \approx 0.01$ with $P(\text{Express} > \text{Standard})
+\approx 0.66$ — a random Express rating tends to exceed a random Standard one. The chi-square gives
+$\chi^2 \approx 9.9$ on $4$ df, $p \approx 0.04$: it detects *some* association but, by treating the five
+categories as unordered, it is weaker than the test that uses the ordering. The "mean of codes" path (Express
+$\approx 4.12$ vs Standard $\approx 3.38$) *looks* tidy but rests on a measurement claim you cannot support.
+**Choose to respect the scale:** use ranks or an ordinal model for an ordered outcome; reserve the nominal
+chi-square for genuinely unordered categories; never average ordinal labels.
+
+## Contaminated regression — a slope you can trust (shape: Dataset D)
+
+**Shape and question.** Dataset D is wellbeing gain vs sessions attended for $n = 40$, with a clean structure
+gain $\approx 2 + 1.5 \cdot \text{sessions}$ spoiled by **two contaminating points**: a high-leverage
+data-entry-style point at sessions $= 20$, gain $= 2$ (a bad $y$ at the edge of $x$), and a vertical outlier at
+sessions $= 5$, gain $= 40$. The question is the underlying slope. Do not pick one fit — fit a robust line
+*alongside* OLS and compare; the disagreement is the diagnostic.
+
+| Candidate | Assumes | Resamples / ranks / downweights | Protects against | Cannot prove |
+|---|---|---|---|---|
+| **Ordinary least squares (OLS)** | errors roughly normal, constant variance, no influential contamination | minimizes $\sum r_i^2$ — squaring lets one far point **dominate** | nothing; it is efficient *only* when contamination is absent | a trustworthy slope here — the leverage point flattens it to $\approx 0.6$ vs the clean $\approx 1.5$ |
+| **Theil–Sen** | a monotone linear trend; errors need not be normal | takes the **median of all pairwise slopes** — downweights any one pair | both outliers and high leverage, up to a high breakdown point | efficiency matching OLS when data *are* clean; recovers slope $\approx 1.45$ |
+| **Huber M-estimator** | a tuning constant separating "ordinary" from "large" residuals | **downweights** large residuals via the Huber loss (squared near zero, linear in the tails) | vertical outliers; partial protection against leverage | full protection against high-leverage $x$ (a bounded-influence/MM variant does better); slope $\approx 1.4$ |
+| **Least absolute deviations (L1)** | a linear trend; errors need not be normal | minimizes $\sum \lvert r_i \rvert$ — the median-regression analogue | vertical outliers in $y$ | resistance to high-*leverage* points specifically; slope $\approx 1.5$ |
+
+**What each result says.** OLS returns slope $\approx 0.6$ — visibly wrong, because the leverage point at
+sessions $= 20$ with a low gain pulls the line flat. Theil–Sen ($\approx 1.45$), Huber ($\approx 1.4$), and L1
+($\approx 1.5$) all recover the clean structure near $1.5$. The honest workflow is to **report both**: when OLS
+and a robust fit agree, you have evidence the contamination is not driving your conclusion; when they diverge as
+here, that divergence *is* the finding, and you investigate the two points rather than silently deleting them.
+For the outcome alone, the same logic applies to summaries: mean $= 11$ vs resistant **median $= 8$** and
+$10\%$ trimmed mean $= 8.3$; ordinary SD $= 9$ (inflated by the $+40$) vs MAD-based SD $\approx 5$. The rule
+that runs through the robust weeks: **investigate, do not auto-delete** — a $+40$ might be a data-entry error or
+a real extreme responder, and the data cannot tell you which.
+
+## Estimating uncertainty — the bootstrap and its failure cases
+
+**Shape and question.** Often the question is not "is there an effect?" but "how uncertain is *this* estimate?"
+— especially for a statistic like the median that has no tidy textbook SE. The bootstrap answers it by
+resampling, but it is **a procedure with assumptions, not a guarantee**. Name the failure cases before you
+trust an interval.
+
+| Candidate | Assumes | Resamples / ranks / downweights | Protects against | Cannot prove |
+|---|---|---|---|---|
+| **Percentile bootstrap CI** | the sample resembles the population; the statistic varies smoothly enough to resample | **resamples with replacement** from $\hat F_n$; reads percentiles of the bootstrap distribution | the need for a closed-form SE; works for medians, trimmed means, ratios | validity under heavy skew/bias (percentile can mis-center — prefer **BCa**, which corrects bias and skew) |
+| **BCa bootstrap CI** | as above, plus that the bias/skew corrections estimate well | resamples; applies bias-correction and acceleration | the percentile interval's mis-centering under skew | validity when the bootstrap *itself* fails (extremes, tiny $n$, dependence — below) |
+| **Bootstrap SE** | sampling variability is what you want; the statistic is not pathological | resamples; takes the SD of the bootstrap replicates | the lack of an analytic SE formula | sampling validity for an extreme order statistic |
+
+**What it says, and where it breaks.** For W, the percentile $95\%$ CI for the difference in medians is
+$\approx (-10, -2)$ min — it excludes $0$, so the Express advantage is more than resampling noise; the bootstrap
+SE of the Express median is $\approx 1.2$ min. But note two cautions the course locks in. First, the bootstrap
+distribution of a **median is lumpy/discrete** — it lands on only a few distinct order-statistic values — so its
+sampling distribution is genuinely not smooth, and percentile and BCa intervals can disagree under skew.
+Second, the headline **failure case**: a bootstrap CI for the **maximum** wait is *unreliable*. The sample
+maximum is an extreme order statistic the bootstrap can never resample *beyond* its observed value, so it badly
+understates the uncertainty at the extreme. The bootstrap also strains at **very small $n$** and **breaks when
+it resamples rows that should stay together** (dependent or paired data — resample the *pairs*, not the rows).
+Assumption-light, never assumption-free.
+
+## A note on choosing — purpose over reflex
+
+The whole guide reduces to a few sentences worth carrying:
+
+| Drift to resist | The disciplined move |
+|---|---|
+| running every test and reporting the smallest $p$ | choose *one* method for a stated purpose, then report it honestly |
+| "nonparametric = no assumptions" | name the live assumption (exchangeability, symmetry, smoothness) every time |
+| reading a rank test as a mean difference | report it as a **shift / probability of superiority**, e.g. $P(X < Y) \approx 0.72$ |
+| averaging ordinal labels | use ranks or an ordinal model; respect the scale |
+| deleting an outlier silently | fit robust **alongside** OLS; investigate the point; report both |
+| treating a bootstrap CI as model-free truth | name the failure cases — extremes, tiny $n$, dependence |
+
+When a parametric method's assumptions genuinely hold — clean, symmetric, adequately sized data — it is the
+efficient, correct choice, and the assumption-light methods will largely agree with it. The lighter methods earn
+their place exactly when the standard model is in doubt: skew, outliers, ordinal scales, contamination, small
+samples. Match the method to the data-generating reality, say why, and bound the claim.
+
+## Evidence and verification status
+
+**verified: false.** The decision logic and the assumption-ladder framing on this page are course-authored, but
+every numeric value referenced here — W's medians ($12$, $18$), the permutation/randomization $p \approx 0.02$,
+the rank-sum $p \approx 0.01$ with $\hat P \approx 0.72$, the $t$-test $p \approx 0.08$, the bootstrap SE
+($\approx 1.2$, $\approx 2.0$ min) and the percentile CI $(-10, -2)$, S's sign-test $p \approx 0.057$ and
+signed-rank $p \approx 0.02$, L's chi-square ($\chi^2 \approx 9.9$, $p \approx 0.04$) and rank $p \approx 0.01$
+with $P \approx 0.66$, and D's OLS slope $\approx 0.6$ versus Theil–Sen $\approx 1.45$ / Huber $\approx 1.4$ /
+L1 $\approx 1.5$, with median $8$, trimmed mean $8.3$, and MAD-based SD $\approx 5$ — is **drafted, synthetic,
+and not independently checked**. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## See also
+
+- [Methods glossary](methods-glossary.qmd) — the vocabulary behind every term used here.
+- [Resampling guide (permutation vs bootstrap)](resampling-guide.qmd) — the two engines side by side: shuffle to
+  test, resample to estimate.
+- [Robustness & outliers guide](robustness-and-outliers-guide.qmd) — resistant summaries, the breakdown point,
+  and *investigate, do not auto-delete*.
+
+---
+
+*This page is a study reference. For graded specifics — deadlines, submissions, and policies — **Blackboard (the
+LMS) is authoritative**.*

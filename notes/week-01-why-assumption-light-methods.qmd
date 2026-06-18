@@ -1,0 +1,356 @@
+---
+title: "Week 1 — Why assumption-light methods?"
+subtitle: "What is fragile in a standard analysis, and what do we do when the model is in doubt?"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "IMS (Çetinkaya-Rundel & Hardin), the shape of a distribution / when the mean misleads — supports placing methods on the assumption ladder"
+toc: true
+---
+
+## The week question
+
+A default statistics workflow has a comfortable rhythm: report a mean, attach a standard error,
+run a $t$-test, read a p-value. It works beautifully when the data are roughly symmetric, light in
+the tails, measured on a real numeric scale, and free of stray contamination. Real service data,
+survey data, and behavioral data are often none of those things. So this week's question is narrow
+and load-bearing: **what exactly is fragile in a standard analysis, and what do we do when the
+model behind it is in doubt?**
+
+The honest answer is not "throw out the t-test" and it is not "find a backup test that has no
+assumptions." It is to recognize that statistical methods sit on a **ladder of assumptions**, from
+the strongest (a fully specified parametric model) down to the lightest (a resistant summary that
+barely commits to anything), and to learn to choose a rung deliberately — to know what each method
+assumes, what it builds from the data instead of assuming, what that protects you against, and what
+it still cannot prove. That ladder is the spine of this entire course, and Week 1 is where you
+first climb onto it.
+
+## Why this matters
+
+Consider one number you have computed hundreds of times: the **mean**. The mean is the balance
+point of the data, and it is an excellent center when the data are symmetric. But the mean has a
+hidden contract — it assumes that every observation deserves an equal vote, including the ones far
+out in a long tail. When a distribution is **right-skewed**, a handful of large values pull the
+mean away from the bulk of the data, and the mean stops describing a typical case. The same
+fragility shows up in the standard error, the t-statistic, and the confidence interval that all
+build on the mean: each inherits the mean's sensitivity to the tail.
+
+This matters because the very situations where you most want a trustworthy answer — wait times,
+incomes, response times, recovery times, costs — are exactly the situations that tend to be
+skewed, heavy-tailed, or contaminated. A method that quietly assumes the world is symmetric will
+quietly mislead you precisely where the stakes are highest. The course's recurring example is the
+**Riverside Wellness Program**, a campus and community effort to shorten service waits; its wait
+times are right-skewed with a few very long waits, and that is the canonical place where **the mean
+misleads and the median resists**. If you can see clearly why the mean fails there, you have the
+motivation for everything that follows: ranks, permutation tests, the bootstrap, and robust
+estimators are all answers to the question "what can I responsibly claim when I no longer trust the
+parametric model?"
+
+The discipline to carry from this week is a refusal to oversell. "Assumption-light" is **never**
+"assumption-free." Every rung of the ladder commits to *something*. The goal is to name that
+something out loud, every time, so that you trade assumptions on purpose rather than by accident.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Explain what a **standard parametric analysis** assumes (a specific distributional shape, often
+  near-normality; that the mean is a meaningful center; that the tail is light) and name three
+  data conditions that break those assumptions.
+- Contrast the **mean** and the **median** as centers, and explain — with the locked Dataset W
+  numbers — why the median resists a long right tail while the mean is dragged by it.
+- State the **assumption ladder** in order — parametric $\to$ rank $\to$ permutation $\to$
+  bootstrap $\to$ robust — and say, for each rung, roughly what it gives up and what it keeps.
+- Read any method through four questions: **what does it assume, what does it build from the data,
+  what does it protect against, and what can it still not prove?**
+- Recognize and correct the week's central error — the belief that a "nonparametric" method has
+  **no** assumptions.
+
+## Core vocabulary
+
+- **Parametric model** — an analysis that commits to a specific distributional family (e.g. the
+  normal model) and estimates a few parameters (mean, SD) within it. Strong assumptions, high
+  efficiency *when the assumptions hold*.
+- **Skew (right-skew)** — asymmetry in which a long tail stretches toward large values; the mean
+  sits to the right of the median.
+- **Mean ($\bar x$)** — the arithmetic average; the balance point. Sensitive to the tail: a single
+  far value can move it without limit (a **breakdown point** of $0$).
+- **Median ($\tilde x$)** — the middle order statistic; a **resistant** center. Up to half the data
+  can be corrupted before it breaks down (breakdown point $\approx 0.5$).
+- **Heavy tails** — more probability far from the center than a normal model predicts; makes
+  extreme values common and inflates the usual SD.
+- **Resistance / robustness** — the property of changing little when a small fraction of the data
+  is extreme or contaminated.
+- **The assumption ladder** — the course's organizing frame: **parametric $\to$ rank $\to$
+  permutation $\to$ bootstrap $\to$ robust**, ordered roughly from most-assumed to most
+  assumption-light. Each rung names what it assumes, builds, protects against, and cannot prove.
+- **Assumption-light, not assumption-free** — the slogan of the course: lighter methods still
+  assume *something* (often exchangeability, symmetry, or that the sample represents the
+  population). Naming the residual assumption is the whole skill.
+
+## Concept development
+
+### The standard analysis and its hidden contract
+
+A default two-group comparison reports each group's mean, pools a standard deviation, forms a
+standard error, and reads a t-statistic against a normal-ish reference. Written out, the comparison
+of two group means $\bar x_T$ and $\bar x_C$ is
+
+$$
+d = \bar x_T - \bar x_C , \qquad
+\operatorname{SE}(d) = s_p\sqrt{\frac{1}{n_T} + \frac{1}{n_C}} , \qquad
+t = \frac{d}{\operatorname{SE}(d)} .
+$$
+
+This machinery is not wrong — it is *conditional*. It assumes the mean is a meaningful center for
+each group, that the SD is a stable measure of spread, and that the sampling distribution of $d$ is
+close to normal. Every one of those assumptions is a promise about the **shape** of the data. When
+the shape is symmetric and light-tailed, the promises are kept and the t-test is hard to beat: it
+is efficient, familiar, and well-calibrated. The trouble begins when the shape changes underneath
+the method while the method keeps reporting as if nothing happened.
+
+The first move of the course is therefore not a new formula but a habit: before trusting a mean-
+based answer, **look at the shape**. Is the distribution symmetric or skewed? Light-tailed or
+heavy? Is the scale truly numeric, or is it ordinal labels dressed up as numbers? Are there a few
+points that sit far from the rest? Each "yes" to skew, heaviness, ordinality, or contamination is a
+crack in the standard analysis's hidden contract — and a reason to step onto a lighter rung.
+
+### The mean misleads under skew; the median resists (Dataset W)
+
+Make this concrete with the recurring slice. In the Riverside service data (synthetic; seed set),
+the **Standard** intake workflow has wait times that are right-skewed, with two unusually long waits
+near $64$ and $88$ minutes. The summaries:
+
+- **Standard workflow** ($n_C = 25$): **median $= 18$ min**, **mean $\approx 22$ min**. The two
+  long waits drag the mean up to about $22$ even though a *typical* wait is around $18$.
+- **Express workflow** ($n_T = 25$): **median $= 12$ min**, **mean $\approx 15$ min** — also a bit
+  of a right tail, but less pronounced.
+
+Look at the gap between center estimates. In the Standard group the mean ($\approx 22$) sits
+**above** the median ($18$) by about four minutes — the signature of right skew. The median asks
+only "what is the middle value once everything is ordered?", so the size of the largest waits is
+irrelevant to it: a wait of $88$ minutes and a wait of $30$ minutes both count simply as "above the
+middle." The mean, by contrast, asks every value for its exact magnitude and averages them, so the
+$88$ pulls hard. That is the **resistance** difference in one picture: the median has a breakdown
+point near $0.5$ (you would have to corrupt nearly half the data to move it arbitrarily), while the
+mean has a breakdown point of $0$ (one sufficiently large value moves it without bound).
+
+Now read the effect both ways. The difference in **medians** is $12 - 18 = -6$ minutes (Express is
+about six minutes faster for a typical user). The difference in **means** is $15 - 22 = -7$ minutes
+— a similar story, but **unstable**, because the two long Standard waits are doing much of the work
+in that $-7$. If a single one of those long waits were recorded differently, the mean difference
+would shift noticeably while the median difference would barely move. Under skew, the median
+difference is the summary you can defend.
+
+The assumption-ladder reading: the **median** *assumes* far less than the mean — essentially only
+that "middle" is a meaningful idea — and it *protects against* a heavy right tail and stray large
+values. What it *cannot* do is use the full magnitude information the way the mean does, so under a
+genuinely symmetric, light-tailed distribution it is a little less efficient. That trade — give up
+some efficiency, gain resistance — is the template for every lighter method in the course.
+
+### The assumption ladder: parametric → rank → permutation → bootstrap → robust
+
+The course's organizing frame lines the methods up by **how much they assume**. Reading top to
+bottom, each rung relaxes a commitment the rung above it made:
+
+1. **Parametric** (heaviest). Commit to a distributional family — typically the normal model — and
+   work inside it (means, SDs, t-tests, OLS). *Assumes* a specific shape; *protects* nothing beyond
+   that shape; *cannot prove* its own assumptions are met. Best when they are.
+2. **Rank** methods. Replace the raw values with their **ranks** (1st smallest, 2nd smallest, …) and
+   reason about orderings. *Assumes* much less about shape — often only exchangeability or symmetry
+   — and *protects against* skew and heavy tails, because a far-out value becomes just "the largest
+   rank." *Cannot* recover the exact magnitudes it discarded, and answers a "which tends to be
+   larger?" question, not a "by how many units?" question.
+3. **Permutation** tests. Build the null reference distribution by **shuffling group labels** under
+   an exchangeability null and recomputing the statistic. *Assumes* exchangeability under the null;
+   *protects against* the need for a normal sampling-distribution formula; *cannot* by itself give a
+   causal reading unless a randomized design supports it.
+4. **Bootstrap**. **Resample the data with replacement** to approximate a statistic's sampling
+   variability directly. *Assumes* the sample represents the population and that the statistic is
+   well-behaved; *protects against* the lack of a closed-form standard error; *cannot* manufacture
+   information that is not in the sample (it famously fails for extremes like a sample maximum).
+5. **Robust** estimators (lightest commitment to any one point). Use summaries that **downweight or
+   ignore** extreme values — the median, the trimmed mean, the MAD, robust regression slopes.
+   *Assumes* that the bulk of the data carries the signal; *protects against* contamination and
+   outliers; *cannot* be maximally efficient when the data are actually clean and normal.
+
+You do not march down this ladder mechanically. You diagnose the data — its shape, scale, sample
+size, and contamination — and you step onto the rung whose assumptions you can actually defend. The
+rest of this course is fifteen weeks of practicing that judgment, one rung at a time. And the rule
+that keeps you honest is the one to memorize now: **every rung assumes something.** "Assumption-
+light" describes a direction on this ladder, not a destination with no assumptions at all.
+
+## Worked examples
+
+### Worked example — Express vs Standard wait times (recurring slice, Dataset W)
+
+**What is assumed.** Suppose you start where most people start: you trust the **mean** as the center
+and plan a mean-based comparison of the two workflows. That choice silently assumes the wait-time
+distributions are well-behaved enough that the mean is a faithful "typical wait" and the SD is a
+stable spread. The Riverside data are **synthetic; seed set.**
+
+**The computation.** The static R below computes the median and mean for each workflow and the two
+ways of reading the effect. It is shown as teaching code and is **not executed** here.
+
+```r
+set.seed(45203)
+
+# Synthetic Riverside wait times (minutes), summarized to their locked shape.
+# Standard: right-skewed, two long waits near 64 and 88; Express: milder tail.
+# (Values stand in for the full n = 25 per group used in later weeks.)
+standard <- c(6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 18,
+              18, 19, 20, 21, 22, 23, 25, 27, 29, 29, 64, 88)
+express  <- c(3, 5, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12,
+              13, 14, 15, 16, 17, 18, 19, 21, 24, 28, 35, 43)
+
+median(standard)   # -> 18  (typical Standard wait, resistant to the long waits)
+mean(standard)     # -> ~22 (dragged UP by the 64 and 88 minute waits)
+median(express)    # -> 12
+mean(express)      # -> ~15
+
+# Two readings of the effect:
+median(express) - median(standard)   # -> 12 - 18 = -6 min  (resistant)
+mean(express)   - mean(standard)     # -> 15 - 22 = -7 min  (unstable under skew)
+
+# median = 18 / 12   mean ~= 22 / 15   median diff = -6   mean diff = -7
+```
+
+**The interpretation.** A typical Standard wait is about **$18$ minutes** and a typical Express wait
+about **$12$** — so for an ordinary user the Express workflow saves roughly **$6$ minutes** (the
+difference in medians). The mean tells a louder story — about a **$7$-minute** saving — but that
+extra minute is bought from the two very long Standard waits near $64$ and $88$, which inflate the
+Standard mean to $\approx 22$. Read through the ladder: choosing the **median** means you *assume*
+only that "middle wait" is meaningful, you *resist* the long right tail, and you *protect against*
+the instability that lets a single recording move the mean difference. What the median *cannot* do
+is tell you the average minutes saved across everyone, tail included — if a clinic's budget depends
+on total person-minutes, you may genuinely want the (fragile) mean and must then defend its
+assumptions. The point is not "always use the median." It is: under this skew, the median is the
+summary you can stand behind, and you should name why.
+
+### Worked example — household response times (transfer, new context)
+
+**What is assumed.** Move to a setting with the same fragility but no connection to the wellness
+program: a web team measures **page response times** (in milliseconds) for a sample of $9$ requests.
+Response-time data are notoriously right-skewed — most requests are quick, but a few hit a slow path
+and take far longer. Again the default move is to trust the mean. These numbers are illustrative and
+distinct from Dataset W.
+
+**The computation.** Suppose the nine response times, sorted, are
+
+$$
+40,\; 45,\; 50,\; 55,\; 60,\; 70,\; 90,\; 130,\; 900 \ \text{ms}.
+$$
+
+The **median** is the 5th of nine ordered values, $\tilde x = 60$ ms. The **mean** is
+
+$$
+\bar x = \frac{40 + 45 + 50 + 55 + 60 + 70 + 90 + 130 + 900}{9}
+= \frac{1440}{9} = 160 \ \text{ms}.
+$$
+
+So $\bar x = 160$ ms sits **far above** the median $\tilde x = 60$ ms — more than double it — and
+the gap is created almost entirely by the single $900$ ms request.
+
+**The interpretation.** A user's *typical* experience is about **$60$ ms** (the median), but the
+mean reports **$160$ ms** — a number no single typical request actually resembles, manufactured by
+one slow outlier. If you published "average response time: $160$ ms," you would describe a world
+that almost no user lives in. The assumption-ladder reading is identical to the wait-time case even
+though the context is new: the **median** *assumes* only that a middle is meaningful, *protects
+against* the heavy right tail, and *cannot* by itself diagnose *why* that one request took $900$ ms
+(was it a genuine slow path worth fixing, or a fluke?). Notice the transfer: the move that rescued
+the wait-time comparison — prefer a resistant center, and name what you give up — is the *same*
+move here. That portability across contexts is exactly what makes the assumption ladder worth
+learning as a frame rather than as a list of tricks.
+
+## A common mistake
+
+This week's classic error (**Risk 1**) is believing that **"nonparametric = no assumptions."** The
+word *nonparametric* invites the misreading: if a parametric method commits to a distributional
+family and a nonparametric one does not, surely the nonparametric one commits to nothing? It is a
+seductive shortcut, and it is wrong in a way that will eventually burn anyone who relies on it.
+
+Every method on the assumption ladder assumes *something*. The **median** assumes that a middle
+value is a meaningful center. A **rank** test assumes the observations are comparable and usually
+that they are **exchangeable** under the null — and several rank methods you will meet later
+(the Wilcoxon signed-rank, for instance) assume the differences are **symmetric**, which is a
+genuine, checkable commitment, not a free pass. A **permutation** test assumes exchangeability under
+the null hypothesis; permute the wrong thing — break a pairing, shuffle labels that are not
+exchangeable — and the p-value is meaningless. The **bootstrap** assumes the sample represents the
+population and that the statistic behaves well enough to be resampled, and it can **fail outright**
+for extremes (it can never resample *beyond* the observed maximum). A **robust** estimator assumes
+the bulk of the data carries the signal, and it pays for its resistance with lost efficiency when
+the data are actually clean.
+
+So the corrected statement is the course slogan: **assumption-light is not assumption-free.** Lighter
+methods relax the *strong, shape-specific* assumptions of the parametric model — and that is exactly
+why they help under skew, heavy tails, ordinal scales, and contamination — but they replace those
+with *weaker, often more defensible* assumptions, never with none. The professional habit is to say
+the residual assumption out loud every single time, using the four-question frame: what does this
+method assume, what does it build from the data, what does it protect against, and what can it still
+not prove? A claim of "no assumptions" fails the very first question.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, with no submission.
+
+1. In one sentence each, state what the **mean** assumes and what the **median** assumes about a
+   distribution, and say which one is dragged by the two long Standard waits near $64$ and $88$
+   minutes — and why.
+2. For Dataset W, the difference in medians is $-6$ minutes and the difference in means is $-7$
+   minutes. Explain in your own words why the median difference is the one you can defend under
+   right skew, and name one situation where you might still genuinely want the mean difference.
+3. Recite the **assumption ladder** in order, and for any two adjacent rungs say what the lighter
+   rung relaxes compared with the heavier one.
+4. A classmate writes, "I used a nonparametric test, so my analysis has no assumptions." Identify
+   what is wrong with the claim and rewrite it as a correct, honest sentence.
+5. For the household response times $40, 45, 50, 55, 60, 70, 90, 130, 900$ ms, the mean is $160$ ms
+   and the median is $60$ ms. Suppose the $900$ ms value were instead $9000$ ms. State, without
+   recomputing exactly, what happens to the mean and what happens to the median, and connect each
+   answer to the idea of a **breakdown point**.
+
+## Reading and source pointer
+
+This week is grounded in the **instructor notes** (the primary course materials) for the motivation
+of assumption-light methods and the assumption ladder, with the **IMS** (Çetinkaya-Rundel & Hardin)
+treatment of **the shape of a distribution and when the mean misleads** for the vocabulary of skew,
+center, and spread that lets you place each method on the ladder. *These notes are the course's own
+synthesis, grounded in but not copied from the sources.* No prose, examples, exercises, figures, or
+solutions are reproduced from any source.
+
+## Evidence and verification status
+
+**verified: false.** The method logic and the assumption-ladder framing on this page are course-
+authored, but every numeric value here is **drafted, synthetic, and not independently checked**. The
+load-bearing synthetic numbers are: the Dataset W centers — Standard **median $= 18$ min**, **mean
+$\approx 22$ min**, with two long waits near **$64$** and **$88$** min, and Express **median $= 12$
+min**, **mean $\approx 15$ min** — together with the resulting **difference in medians $= -6$** and
+**difference in means $= -7$** minutes, and the illustrative household response-time transfer
+(median $60$ ms, mean $160$ ms). All example data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we stop treating the empirical distribution as a backdrop and make it the main object. We
+build the **ECDF** of the Riverside waits, read **quantiles** and **order statistics** off it, and
+turn the raw values into **ranks** — the machinery that the median quietly used this week, now made
+explicit. That is the second rung of the ladder: once you can describe a distribution entirely from
+the data, without assuming a shape, you have the foundation for the permutation tests, bootstrap,
+and rank methods that the rest of the course builds.
+
+## See also
+
+- [Week 2 — Order statistics, ranks & empirical distributions](week-02-order-statistics-ranks-and-empirical-distributions.qmd)
+  — the next rung: describe a distribution straight from the data.
+- [Methods glossary](../resources/methods-glossary.qmd) — mean, median, breakdown point, the
+  assumption ladder, and the rest of the course vocabulary.
+- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide for
+  matching a method to the data's shape.
+- [Resampling guide](../resources/resampling-guide.qmd) — permutation and bootstrap logic side by
+  side, for the rungs ahead.
+- [Robustness and outliers guide](../resources/robustness-and-outliers-guide.qmd) — resistance,
+  breakdown points, and what to do with contamination.
