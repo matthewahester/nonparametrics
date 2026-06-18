@@ -128,8 +128,26 @@ code {
   display: block;
   width: 100%;
   height: auto;
-  margin: 0 0 1.75rem 0;
+  max-width: 1100px;
+  margin: 0 auto 1.75rem auto;
   border-radius: 0.5rem;
+}
+
+/* Course landing identity. The course name is large typography INSIDE the hero
+   art, so we add a real, selectable HTML title just BELOW the hero (better for
+   accessibility, copy/paste, and SEO) and keep it modest to avoid duplicate
+   title emphasis. The former frontmatter subtitle becomes a muted tagline. */
+h1.course-landing-title {
+  margin-top: 0;
+  margin-bottom: 0.35rem;
+  font-size: 1.9rem;
+  line-height: 1.2;
+}
+.course-landing-subtitle {
+  margin: 0 0 1.6rem 0;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--bs-secondary-color, #5b6169);
 }
 
 /* Misc */

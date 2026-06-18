@@ -1,10 +1,15 @@
 ---
-title: "Resampling, Nonparametric & Robust Methods"
-subtitle: "What can we responsibly infer when the usual assumptions are in doubt?"
+pagetitle: "Resampling, Nonparametric & Robust Methods"
 toc: false
 ---
 
-![](assets/hero.png){.course-hero-img fig-alt="Course identity hero for Resampling, Nonparametric and Robust Methods — a red-orange vanadinite crystal cluster surrounded by assumption-light graphics including a bootstrap percentile interval, permutation and randomization tests, rank-based methods, robust estimators with a breakdown-point chart, and a method-comparison simulation, with the course title."}
+![](assets/hero-web.webp){.course-hero-img fig-alt="Course identity hero for Resampling, Nonparametric and Robust Methods — a red-orange vanadinite crystal cluster surrounded by assumption-light graphics including a bootstrap percentile interval, permutation and randomization tests, rank-based methods, robust estimators with a breakdown-point chart, and a method-comparison simulation, with the course title."}
+
+# Resampling, Nonparametric & Robust Methods {.course-landing-title}
+
+::: {.course-landing-subtitle}
+What can we responsibly infer when the usual assumptions are in doubt?
+:::
 
 > Real data are often skewed, heavy-tailed, ordinal, small-sample, or contaminated by outliers. This course
 > studies the statistical methods that stay useful when the normal model, equal variances, and large-sample
