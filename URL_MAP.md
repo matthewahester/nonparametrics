@@ -37,13 +37,12 @@ Notes with unchanged slugs (no redirect needed): week-03, week-04, week-05, week
 | `resources/method-chooser.html` | `resources/method-comparison-guide.html` |
 | `resources/methods-glossary.html` | `resources/notation-and-glossary.html` |
 
-## Material breakage — NO direct successor (HUMAN DECISION at deploy)
+### Legacy pages with no 1:1 successor — now redirected to the closest fit (2026-07-10 closeout)
 
-These old pages have no one-to-one successor in the new build. They are currently **not** redirected (they
-would 404). Recommended targets if a redirect is wanted — add an `aliases:` entry to the suggested page and
-re-render, OR accept the 404:
+These old pages had no one-to-one successor in the new build; each now redirects (Quarto `aliases`) to its
+closest documented successor, so the old URL resolves instead of 404-ing:
 
-| Old URL (would 404) | Suggested redirect target | Note |
+| Old URL | → Successor (closest topic) | Note |
 |---|---|---|
 | `labs/lab-11-robust-regression-versus-least-squares.html` | `notes/week-11-robust-regression-ideas.html` | robust regression is now a **note**, not a lab |
 | `resources/resampling-guide.html` | `resources/method-comparison-guide.html` | resampling how-to folded into the method-comparison guide |
@@ -52,8 +51,37 @@ re-render, OR accept the 404:
 New pages with no old equivalent (net-new, no redirect needed): `labs/lab-03-rank-methods.html`,
 `resources/project-guidance.html`, `resources/reading-list.html`, `resources/setup.html`.
 
-## Deploy note
+**Total redirects now generated: 16** (8 renamed notes + 5 restructured labs/resources + these 3). No known
+legacy URL 404s.
 
-This branch is a **local release candidate only** — not pushed and not deployed. Deployment is the
-hub-workflow + human step (see the repository's release controls). Roll back with the tag
-`rollback/pre-resampling-refresh-2026-07-10`.
+## Accessibility inventory (rendered)
+
+A full scan of the complete rendered `_site` (47 HTML pages incl. the 16 redirect stubs) finds **147
+`<img>` tags, all 147 with a non-empty `alt` attribute — 0 missing, 0 empty.** This is the rendered-HTML
+complement to the source-level `check_accessibility_static_lint` (a `.qmd` line parser that does not scan
+rendered HTML). It is **presence evidence only**: alt-text **quality/adequacy and the assistive-technology /
+contrast pass remain human-reviewed** (*present ≠ adequate*). Recorded in the build's
+`_state/accessibility_status.md` (`rendered_alt_inventory: complete`).
+
+## Deploy note & rollback
+
+This branch (`release/resampling-refresh-2026-07-10`) is a **local release candidate only — not pushed, not
+deployed**. `main` is untouched at `9a8189f`. Deployment is the hub-workflow + human step: after a human
+approves, promote/merge the branch to `main`, push, and run the hub (`matthewhester-site`) `publish.yml` to
+assemble and deploy — a course-repo push alone does not deploy.
+
+**Rollback — prefer non-destructive over rewriting published history:**
+
+- **Before promotion (nothing shared yet):** the release is isolated on its branch and `main` is unchanged
+  at `9a8189f` — simply do not promote, or delete/reset the *local* branch. Nothing is published, so there
+  is nothing to undo.
+- **After promotion (merged, pushed, and/or deployed = shared history):** do **not** `git reset --hard` or
+  force-push a shared branch. Instead, either
+  1. **`git revert`** the promotion commit — `git revert -m 1 <merge-commit>` (or revert the range) — which
+     adds a *new* commit restoring the prior content, then re-run the hub `publish.yml`; **or**
+  2. **redeploy the tagged prior release** — the pre-refresh state is preserved at tag
+     `rollback/pre-resampling-refresh-2026-07-10` (= `9a8189f`); check it out into the deploy source and
+     re-run the hub.
+
+  Both keep published history append-only. Reserve `reset --hard` / force-push for a purely local,
+  never-shared branch only.

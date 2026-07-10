@@ -1,5 +1,7 @@
 ---
 title: "Week 11 — Robust regression ideas"
+aliases:
+  - ../labs/lab-11-robust-regression-versus-least-squares.html
 subtitle: "One point can steer a least-squares line, and what to do about it"
 pagetitle: "Week 11 — Robust regression ideas · STAT 45203"
 week: "week-11"

@@ -2,6 +2,7 @@
 title: "Week 10 — Robust summaries & outliers"
 aliases:
   - week-10-robust-summaries-and-outliers.html
+  - ../resources/robustness-and-outliers-guide.html
 subtitle: "Summaries that don't flinch, and outliers worth a second look"
 pagetitle: "Week 10 — Robust summaries & outliers · STAT 45203"
 week: "week-10"

@@ -2,6 +2,7 @@
 title: "Method-comparison guide"
 aliases:
   - method-chooser.html
+  - resampling-guide.html
 subtitle: "STAT 45203 · what each method estimates, assumes, protects against, and cannot prove"
 toc: true
 ---
