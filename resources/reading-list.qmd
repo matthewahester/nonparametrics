@@ -1,0 +1,76 @@
+---
+title: "Open readings & attribution"
+subtitle: "STAT 45203 · what this course draws on, and how"
+toc: true
+---
+
+::: {.source-basis}
+**How this course uses sources.** The primary material is instructor-authored (this site + Blackboard).
+The open texts below are **conceptual companions, cited by section title only** — the course reproduces
+**no** prose, figures, examples, or exercises from them, and all data on this site is synthetic and
+instructor-generated. This is deliberately more restrictive than the open licenses require, so the
+public/private boundary stays clean. Licenses are recorded as best known and remain subject to
+instructor confirmation before any wider release.
+:::
+
+## Why there is no single textbook
+
+The syllabus is explicit that **no single textbook carries this course.** Resampling, classical
+nonparametrics, robust statistics, and simulation-based inference each have their own literature, and the
+best free treatments are scattered across several open books and public-domain references. Rather than
+adopt one text and stretch it, the course uses a **map, don't mine** approach: each week's ideas are
+developed originally here, and the readings below are offered as places to *read the same idea in another
+voice* and check your understanding.
+
+If you read one of these companions and then re-explain the idea in your own words after checking it
+against the notes, that is exactly the kind of **verification** the [AI policy](../syllabus.qmd) asks for.
+
+## The open companions
+
+### For bootstrap, permutation, randomization, and simulation-based inference
+
+- **Introduction to Modern Statistics** — Mine Çetinkaya-Rundel & Johanna Hardin.
+  <https://openintro-ims.netlify.app/> · License: CC BY-SA 3.0 US (print) / CC BY-NC-SA 4.0 (eBook
+  edition). *Primary conceptual companion* for simulation-based inference, randomization, and the
+  bootstrap (Weeks 3–6, 13).
+- **Statistical Inference via Data Science: A ModernDive** — Chester Ismay & Albert Y. Kim.
+  <https://moderndive.com/> · Open online (specific CC terms unconfirmed; treated as cite/link only). A
+  hands-on companion for bootstrap confidence intervals and permutation tests with the `infer` package
+  (Weeks 3–6).
+- **OpenIntro Statistics, 4th ed.** — David Diez, Mine Çetinkaya-Rundel, Christopher Barr.
+  <https://www.openintro.org/book/os/> · License: CC BY-SA 3.0. Foundations-for-inference and
+  regression-review companion (Weeks 1, 5–6, 11–12).
+
+### For rank-based and robust methods
+
+- **Learning Statistics with R** — Danielle Navarro. <https://learningstatisticswithr.com/> · License:
+  CC BY-SA 4.0. A readable companion for rank tests and robust summaries (Weeks 7–10).
+- **NIST/SEMATECH e-Handbook of Statistical Methods** — U.S. National Institute of Standards and
+  Technology. <https://www.itl.nist.gov/div898/handbook/> · U.S. Government work (public domain, with
+  courtesy attribution). Reference for order statistics, exploratory data analysis, and robustness
+  (Weeks 2, 10–11).
+
+### An instructor reference (cited, not reproduced)
+
+- **Hesterberg, T. C. (2015). "What Teachers Should Know About the Bootstrap: Resampling in the
+  Undergraduate Statistics Curriculum."** *The American Statistician*, 69(4).
+  Preprint: <https://arxiv.org/abs/1411.5279>. A published article on what the bootstrap does and does
+  not deliver. Used as an **instructor reference only** — named and linked, never reproduced.
+
+## Software
+
+- **R** — <https://www.r-project.org/> (GPL). The statistical computing environment; all shown teaching
+  code is instructor-original R.
+- **RStudio / Posit Cloud** — <https://posit.cloud/>. The IDE and the browser-only run path (no install).
+- **Quarto** — <https://quarto.org/> (MIT). This site is built with Quarto.
+
+See [Software setup](setup.qmd) for the fastest path to a working environment.
+
+## Attribution and licensing note
+
+Where the companions above are licensed CC BY-SA or CC BY-NC-SA, that license would *permit* adaptation
+with attribution and share-alike; this course chooses **not** to adapt their content and instead cites
+them by section title only, keeping the site's own content fully instructor-original. Any figures that
+resemble a standard display (an ECDF, a bootstrap histogram) are **regenerated originally** from
+synthetic data, not copied. The instructor confirms license and attribution wording before any public
+release beyond this draft.

@@ -1,81 +1,51 @@
 ---
-title: "Notes"
-subtitle: "The weekly assumption-light methods spine"
-page-type: orientation
-toc: true
+title: "Weekly notes"
+subtitle: "STAT 45203 · one method page per week"
+toc: false
 ---
 
-The notes are the backbone of the course. There is one note per week, and reading the current week's note before
-class — and again after — is the single most reliable way to keep up. Every note follows the same shape, so once
-you learn to read one, you can read them all.
+::: {.source-basis}
+Original instructor-authored notes. Data is synthetic. Open texts are conceptual companions cited by
+section only (see [Open readings & attribution](../resources/reading-list.qmd)). Ungraded; Blackboard is
+authoritative for graded work.
+:::
 
-## How to read a week
+Each week's page follows the same shape: a **picture and a worked example first**, then the idea in
+plain language with live-text math, a **common mistake** to avoid, ungraded practice, and a short bridge
+to the next week. The through-line is a single question — *what is fragile here, and what can we still
+say?*
 
-Each weekly note is built from the same parts, in the same order. Knowing the anatomy lets you skim for what you
-need and study with intent:
+## First half — seeing variability without a formula
 
-- **The week question.** A single question that the week exists to answer. Hold it in mind as you read;
-  everything else is in service of it.
-- **Concept development.** The core ideas, built up in a few short sections from intuition toward a precise
-  statement about *what the method assumes and what it claims*. This is the part to read slowly — and where the
-  **assumption ladder** (what is assumed, what is resampled/ranked/downweighted, what is protected against, what
-  cannot be proven) is made explicit.
-- **Worked examples.** Each idea is worked on the recurring **Riverside Wellness** world — the wait-time
-  comparison, the paired before/after wellbeing scores, the satisfaction ratings, or the contaminated
-  engagement-vs-gain scatter — with the setup, the computation shown in R, and the result interpreted in
-  sentences — plus one *transfer* example in a fresh context, so you see the idea move.
-- **A common mistake.** The resampling/rank/robust error students most often make on this topic — permuting the
-  wrong thing, treating a bootstrap interval as assumption-free, reading a rank test as a mean difference,
-  deleting an outlier silently — named plainly so you can watch for it in your own work.
-- **Ungraded self-checks.** A few low-stakes practice prompts to test yourself. These are *self-check only* — no
-  points, no submission.
-- **Reading pointer.** Where to read more: the relevant *Introduction to Modern Statistics* topic (and, for the
-  workflow weeks, *ModernDive*; for the classical rank-based weeks, the optional *Nonparametric Statistical
-  Methods*), with the reminder that these notes are the course's own synthesis.
-- **Evidence and verification status.** An honest note that the numbers in the example datasets are drafted and
-  synthetic, pending review — this is a draft course site.
-- **Looking ahead.** A sentence or two connecting this week to the next, so the arc stays visible.
+1. [Why assumption-light methods?](week-01-why-assumption-light.qmd) — models, assumptions, and reading
+   a dataset for what is fragile.
+2. [Order statistics, ranks, and empirical distributions](week-02-order-statistics-ranks-ecdf.qmd) —
+   quantiles, the median, ranks, and the ECDF as a distribution-free summary.
+3. [Permutation logic](week-03-permutation-logic.qmd) — what a null hypothesis lets us shuffle, and what
+   it must hold fixed.
+4. [Randomization tests](week-04-randomization-tests.qmd) — design-based inference and *p*-values from
+   simulated reassignments.
+5. [Bootstrap distributions](week-05-bootstrap-distributions.qmd) — resampling with replacement to see
+   how a statistic wobbles.
+6. [Bootstrap confidence intervals](week-06-bootstrap-confidence-intervals.qmd) — percentile intervals,
+   what they assume, and where they fail.
+7. [Rank-based one-sample and paired methods](week-07-rank-based-one-sample-paired.qmd) — sign and
+   signed-rank tests for one sample and matched pairs. *(Midterm this week.)*
 
-Keep the [methods glossary](../resources/methods-glossary.qmd) and the
-[method chooser](../resources/method-chooser.qmd) open alongside the notes.
+## Second half — ranks, robustness, and comparison
 
-## The four parts
-
-The fifteen weeks fall into four parts. Each part has a job, and the weeks within it build on one another.
-
-**Part I — Foundations of assumption-light reasoning.** Why weaker assumptions are useful, and the empirical
-objects the course is built on.
-
-1. [Week 1 — Why assumption-light methods?](week-01-why-assumption-light-methods.qmd)
-2. [Week 2 — Order statistics, ranks & empirical distributions](week-02-order-statistics-ranks-and-empirical-distributions.qmd)
-
-**Part II — Resampling inference.** Inference built from the data itself: shuffle to test, resample to estimate.
-
-1. [Week 3 — Permutation logic](week-03-permutation-logic.qmd)
-2. [Week 4 — Randomization tests](week-04-randomization-tests.qmd)
-3. [Week 5 — Bootstrap distributions](week-05-bootstrap-distributions.qmd)
-4. [Week 6 — Bootstrap confidence intervals](week-06-bootstrap-confidence-intervals.qmd)
-
-**Part III — Rank-based & ordinal methods.** Methods that use order, not the raw numbers.
-
-1. [Week 7 — Rank-based one-sample & paired methods (midterm)](week-07-rank-based-one-sample-and-paired-methods.qmd)
-2. [Week 8 — Two-sample rank methods](week-08-two-sample-rank-methods.qmd)
-3. [Week 9 — Categorical & ordinal outcomes](week-09-categorical-and-ordinal-outcomes.qmd)
-
-**Part IV — Robustness, comparison & synthesis.** Resistant summaries, robust regression, method comparison, a
-simulation study, and a closing synthesis.
-
-1. [Week 10 — Robust summaries & outliers](week-10-robust-summaries-and-outliers.qmd)
-2. [Week 11 — Robust regression ideas](week-11-robust-regression-ideas.qmd)
-3. [Week 12 — Comparing parametric & nonparametric conclusions](week-12-comparing-parametric-and-nonparametric-conclusions.qmd)
-4. [Week 13 — Simulation study of method behavior](week-13-simulation-study-of-method-behavior.qmd)
-5. [Week 14 — Applied robust-methods report workshop](week-14-applied-robust-methods-report-workshop.qmd)
-6. [Week 15 — Final review](week-15-final-review.qmd)
-
-## Public vs. graded
-
-These notes and the practice in them are **public and ungraded** — study material only. No graded prompts,
-answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, quizzes,
-homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and
-the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades.
-If this page and Blackboard ever disagree, follow Blackboard.
+8. [Two-sample rank methods](week-08-two-sample-rank-methods.qmd) — the rank-sum test and what a
+   location shift does and does not claim.
+9. [Categorical and ordinal outcomes](week-09-categorical-ordinal-outcomes.qmd) — contingency tables,
+   exact logic, and honoring the measurement scale.
+10. [Robust summaries and outliers](week-10-robust-summaries-outliers.qmd) — median, trimmed mean, MAD,
+    and reading influence without deleting data.
+11. [Robust regression ideas](week-11-robust-regression-ideas.qmd) — why least squares is sensitive, and
+    what a resistant fit changes.
+12. [Comparing parametric and nonparametric conclusions](week-12-comparing-parametric-nonparametric.qmd)
+    — agreement, divergence, and honest reporting.
+13. [Simulation study of method behavior](week-13-simulation-study-method-behavior.qmd) — Type I error,
+    power, bias, and coverage as things you can *measure*.
+14. [Applied robust-methods report](week-14-applied-robust-methods-report.qmd) — the project workshop:
+    turning a comparison into a defensible report.
+15. [Final review](week-15-final-review.qmd) — synthesis: choosing a method for a purpose.

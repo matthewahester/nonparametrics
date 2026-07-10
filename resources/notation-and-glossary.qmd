@@ -1,0 +1,86 @@
+---
+title: "Notation & glossary"
+aliases:
+  - methods-glossary.html
+subtitle: "STAT 45203 · the symbols and terms in one place"
+toc: true
+---
+
+::: {.source-basis}
+Instructor-authored reference. Original definitions; nothing reproduced from any text. Math is live text
+(MathML), not images.
+:::
+
+## Notation
+
+| Symbol | Read as | Meaning |
+|---|---|---|
+| $x_1, \dots, x_n$ | the data | a sample of $n$ observations |
+| $x_{(1)} \le \dots \le x_{(n)}$ | order statistics | the sample sorted; $x_{(1)}$ is the min, $x_{(n)}$ the max |
+| $\bar{x}$ | x-bar | the sample mean |
+| $\tilde{x}$ or $m$ | the median | the middle value (average of the two middle values if $n$ is even) |
+| $\hat{F}(x)$ | F-hat of x | the empirical CDF: the fraction of the sample $\le x$ |
+| $R_i$ | the rank of $x_i$ | its position when the data are sorted (average of positions for ties) |
+| $\theta$ | theta | a population parameter (the thing we want to know) |
+| $\hat{\theta}$ | theta-hat | an estimate of $\theta$ computed from the sample |
+| $\theta^*$ | theta-star | a **bootstrap** value of the statistic, from one resample |
+| $B$ | — | the number of resamples (bootstrap) or shuffles (permutation) |
+| $\text{SE}$ | standard error | the standard deviation of a statistic's sampling distribution |
+| $\alpha$ | alpha | a significance level (e.g. 0.05); the target Type I error rate |
+| $\text{MAD}$ | mad | median absolute deviation, $\operatorname{median}(|x_i - \tilde{x}|)$ |
+
+## Glossary
+
+**Assumption-light method.** A method that stays useful under weaker assumptions than the normal-theory
+default — resampling, rank-based, or robust.
+
+**Bootstrap.** Resampling **from the sample itself**, with replacement and the same size, to approximate
+how a statistic varies from sample to sample.
+
+**Bootstrap distribution.** The collection of a statistic recomputed on many bootstrap resamples. Its
+spread estimates the statistic's standard error; it is centered at the **sample** statistic, not the true
+parameter.
+
+**Breakdown point.** The fraction of observations that can be made arbitrarily extreme before a summary
+becomes useless. The median's breakdown point is 50%; the mean's is 0%.
+
+**ECDF (empirical CDF).** The step function $\hat{F}(x)$ giving the fraction of the sample at or below
+each value — a distribution-free picture of the whole sample.
+
+**Exchangeability.** The assumption that, under the null, the labels on the observations could be swapped
+without changing the distribution — the engine of a permutation test.
+
+**Influence / leverage.** *Leverage* is how unusual a point's predictor value is; *influence* is how much
+a single point changes a fit. A high-leverage point with a large residual is highly influential.
+
+**Order statistic.** The sample sorted into position: $x_{(1)}$ (minimum) up to $x_{(n)}$ (maximum).
+
+**Percentile interval.** A bootstrap confidence interval read off as the middle $1-\alpha$ of the
+bootstrap distribution (e.g. the 2.5th to 97.5th percentiles).
+
+**Permutation test.** A test that builds a null distribution by reshuffling labels among the observed
+values — holding the values fixed, varying only the assignment.
+
+**Randomization test.** A permutation-style test justified by the **actual random assignment** in an
+experiment; inference is to the units that were randomized.
+
+**Rank.** An observation's position in the sorted data. Rank-based methods use ranks instead of raw
+values, trading exact spacing for resistance to outliers.
+
+**Robust / resistant summary.** A summary (median, trimmed mean, MAD) that changes little when a small
+fraction of the data is extreme.
+
+**Sampling distribution.** The distribution of a statistic across hypothetical repeated samples from the
+population — usually unseen; the bootstrap approximates its **spread**.
+
+**Stochastically larger.** Group A is stochastically larger than B if, at every threshold, A is more
+likely to exceed it — what the rank-sum test detects (not, in general, a difference in means).
+
+**Trimmed mean.** The mean after discarding a fixed fraction of the smallest and largest values — a
+compromise between the mean and the median.
+
+**Type I error / power.** Type I error is rejecting a true null (target $\alpha$); power is rejecting a
+false null. Both are things you can **measure** with a simulation study.
+
+**Wilcoxon signed-rank / rank-sum.** Rank-based tests for paired differences (signed-rank) and two
+independent groups (rank-sum / Mann–Whitney).

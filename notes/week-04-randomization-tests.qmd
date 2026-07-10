@@ -1,398 +1,271 @@
 ---
 title: "Week 4 — Randomization tests"
-subtitle: "When the reshuffle mimics the assignment mechanism, what does the test license?"
-page_mode: normal_week
-week_contract: public_note
-source_mode: source-informed
-verified: false
+subtitle: "Inference from the coin the experiment actually flipped"
+pagetitle: "Week 4 — Randomization tests · STAT 45203"
+week: "week-04"
+module: "Testing by resampling"
+page_standard: public_note
+source_authorization: source_informed
 readings:
-  - "IMS (Çetinkaya-Rundel & Hardin), randomization-based hypothesis testing — supports the design-based reshuffle"
-  - "ModernDive (Ismay, Kim & Valdivia), the infer workflow — supports the companion lab"
+  - "IMS (Cetinkaya-Rundel & Hardin) — Randomization and inference for a difference — conceptual companion (section title only)"
+  - "OpenIntro Statistics 4e — Inference for comparing two means / randomization — companion"
+  - "NIST/SEMATECH e-Handbook — Randomization in the design of experiments — instructor reference"
 toc: true
 ---
 
-## The week question
+::: {.source-basis}
+**Source basis.** Original instructor-authored notes; data is synthetic (a randomized field trial of 20
+plots — 10 treatment, 10 control — from a fixed generator, seed 45204). Open texts are conceptual
+companions cited **by section title only** (map-don't-mine); no prose, figures, examples, or exercises
+are reproduced. See [Open readings & attribution](../resources/reading-list.qmd). Ungraded — Blackboard
+is authoritative for graded work.
+:::
 
-Last week you shuffled group labels to build a reference distribution and read a permutation
-$p$-value, and you were careful to call the result a statement about a *difference between two
-observed groups* — nothing more. This week the shuffle machinery is the same down to the last line of
-code, but the study behind it is different in one decisive way: the Express workflow was **randomly
-assigned** to arrivals. That single design fact changes what the same number is allowed to say. So the
-week's question is narrow and load-bearing: **when the reshuffle mimics the assignment mechanism that
-actually produced the data, what does the test license — and what is it that does the licensing, the
-design or the $p$-value?**
+::: {.thisweek}
+> **This week.** Last week we shuffled group labels to ask whether a difference *could be* an accident of
+> which unit landed in which group. This week we take the same shuffling machinery but change the
+> *warrant*: in a **randomized experiment** the shuffling is not a modelling assumption we hope holds — it
+> is a physical fact of how the study was run. The randomization test asks: **among all the label
+> assignments the experiment's own coin could have produced, how unusual is the one we got?**
+:::
 
-The honest one-line answer, which the rest of the page unpacks, is that a randomization test built on
-top of real random assignment licenses a **causal** read of the same shift you saw last week, and the
-license comes from the assignment, not from the size of $p$. The reshuffle is just the engine that
-tells you how big a difference the assignment alone could have manufactured under a no-effect null.
-
-## Why this matters
-
-This is the place in the course where two ideas that *look* identical in code part ways in meaning. A
-permutation test of an observational comparison (week 3) and a randomization test of a designed
-experiment (this week) both pool the data, shuffle labels, recompute a statistic, and read a tail
-probability. Run them on the same numbers and you get the same $p \approx 0.02$. But the *conclusion*
-each one supports is different, and the difference lives entirely in how the data came to be, not in
-the arithmetic.
-
-It matters because the most expensive mistake in applied work is **over-claiming**: reporting a
-permutation $p$ from an observational comparison and then quietly writing "the Express workflow
-*caused* shorter waits." The causal verb is not earned by a small $p$; it is earned by the random
-assignment that makes the two arms exchangeable in expectation. When assignment is genuinely random,
-the reshuffle you perform on the computer is a faithful re-enactment of the chance mechanism the world
-already used — so the reference distribution is not an analogy, it is the design's own null behavior.
-When assignment is *not* random, the very same reshuffle is only a model of "what if the labels were
-swappable," and the strongest honest read is associational.
-
-This is also the course's assumption-light discipline in its sharpest form. A randomization test makes
-almost no distributional assumption — no normality, no equal variances, no large-sample formula. But
-"assumption-light" is never "assumption-free." The randomization test leans hard on one structural
-assumption that the design, not the data, must supply: that the labels really were assigned by a known
-random mechanism. Name that trade every time, and you will never confuse a clean $p$ with a clean
-causal claim.
-
-## Learning goals
+## Learning goals {#learning_goals}
 
 By the end of this week you should be able to:
 
-- Distinguish a **permutation test of an observational comparison** from a **randomization test of a
-  randomized experiment**, and state the one design fact — random assignment — that separates them.
-- Describe the **randomization reference distribution** — shuffle the assigned labels under the
-  no-effect null, recompute the statistic, repeat — and read the **randomization $p$-value** as a tail
-  probability of that distribution.
-- Explain why, when assignment was random, the reshuffle **mimics the assignment mechanism** and the
-  test therefore licenses a **causal** reading of the shift, while the identical reshuffle on
-  observational data licenses only an associational one.
-- Compute the observed effect on Dataset W as a **difference in medians**, situate $-6$ minutes against
-  a randomization distribution centered at $0$, and read the randomization $p \approx 0.02$.
-- Name the assumption-ladder move precisely: what is assumed (the assignment mechanism), what is
-  resampled (the labels), what it protects against (confounding, distributional misspecification), and
-  what it still **cannot** prove (external generalization; a guarantee that the design was sound).
-- Diagnose the week's classic error — **permuting the wrong thing / over-claiming** — and state where
-  the causal license actually comes from.
+- Explain why a **randomization test** draws its reference distribution from the study's **actual random
+  assignment**, not from an assumed population.
+- Build a **randomization distribution** of a treatment effect by **re-randomizing the labels** under the
+  sharp null of no unit-level effect.
+- Compute and read a **two-sided randomization p-value** as a shaded share of that distribution.
+- State precisely what that p-value **does and does not** claim — including that it is **not** the
+  probability the null is true, and that it speaks only to the **units that were randomized**.
 
-## Core vocabulary
+## Where we are {#concept_development}
 
-- **Randomization test** — a test whose reference distribution is generated by re-applying, on the
-  computer, the *same random assignment mechanism the design used*, under a null of no treatment
-  effect. Mechanically a label shuffle; conceptually a re-enactment of the design.
-- **Permutation test (contrast)** — the identical shuffle, but justified by an *assumption of
-  exchangeability* of two observed groups rather than by a known assignment mechanism. Same engine,
-  weaker license.
-- **Random assignment** — a known chance mechanism (a coin, a draw, `sample()`) that decides which unit
-  receives the treatment; the design fact that makes the two arms exchangeable *in expectation* and
-  thereby blocks confounding.
-- **Assignment mechanism** — the actual rule by which units came to be treated or not. A randomization
-  test is valid exactly when the on-computer reshuffle matches this real mechanism.
-- **Randomization reference distribution** — the spread of the test statistic across many reshuffles of
-  the labels, holding the outcomes fixed; the set of effects the assignment alone could produce when
-  the treatment does nothing.
-- **Randomization $p$-value** — the fraction of reshuffled statistics at least as extreme as the
-  observed one; a tail probability, **not** a measure of design quality or of effect size.
-- **Test statistic** — here the **difference in medians** $\tilde y_T - \tilde y_C$, chosen because
-  Dataset W is right-skewed and the median resists the long tail.
-- **Causal vs. associational read** — what the design lets you *say*. Random assignment licenses
-  "caused"; an observational comparison licenses only "is associated with."
+We keep asking *what is fragile here, and what can we still say?* In an observational comparison, the
+fragile part is the leap from "these groups differ" to "the difference is real" — we never saw the coin
+that sorted units into groups, so we have to *assume* one. A **randomized experiment removes that
+fragility at the source.** The experimenter physically randomizes units to treatment or control, so the
+only thing separating the two groups — before any treatment acts — is the luck of the draw.
 
-## Concept development
+That gives inference a footing that needs no population at all. If the treatment truly did nothing, then
+each plot's yield would be exactly what it is **regardless of the label it received** (this is the *sharp
+null*). Under that null the observed difference is manufactured entirely by **which plots happened to be
+called "treatment."** So we can rebuild the whole space of "what could have happened" by simply
+**re-dealing the labels** — the same 20 numbers, reshuffled into two groups of ten.
 
-### Same machine, different warrant
+::: {#fig-w04-design}
+![Flow diagram: a box of 20 field plots with fixed outcomes splits by randomized labels into a Treatment box (n=10) and a Control box (n=10); both feed an observed-effect box reading treatment minus control equals plus 8.92; a dashed loop arrow returns to the plots labeled re-randomize the labels 10,000 times to build the reference distribution.](../figures/week-04/w04_design.png){fig-alt="Flow diagram: a box of 20 field plots with fixed outcomes splits by randomized labels into a Treatment box (n=10) and a Control box (n=10); both feed an observed-effect box reading treatment minus control equals plus 8.92; a dashed loop arrow returns to the plots labeled re-randomize the labels 10,000 times to build the reference distribution."}
 
-Start with the machine, because it is genuinely the same as last week. Pool the $50$ wait times, hold
-the $50$ outcomes fixed, randomly relabel $25$ of them "Express" and $25$ "Standard," recompute the
-difference in medians, and repeat about $10{,}000$ times. That loop is the engine for *both* a
-permutation test and a randomization test. If you only watched the code run, you could not tell which
-one you were doing.
+The randomized experiment: 20 field plots are split into treatment and control, giving an observed
+effect of +8.92, then the labels are re-randomized 10,000 times to build the reference distribution.
+:::
 
-The difference is the **warrant** — the justification for why that loop is the right null model. In
-week 3 the warrant was an *assumption*: "if the Express and Standard waits are exchangeable (the labels
-carry no information), then any relabeling is as likely as the one we saw." You assumed exchangeability;
-you did not know it. This week the warrant is a *design fact*: the Express workflow was **randomly
-assigned** to arrivals, so under a no-effect null each arrival's wait would have been identical
-whichever label it drew, and the labels genuinely are interchangeable tags. You do not have to assume
-exchangeability — the randomization built it in. The reshuffle on your computer re-enacts the very
-coin the front desk flipped.
+::: {.notice}
+**What to notice.** The 20 outcomes are treated as **fixed**; only the *labels* move. The observed
+effect (+8.92 bushels) is one draw from the label-shuffling process. The dashed loop is the whole method:
+re-randomize, recompute the difference, repeat — the collection of those differences is the reference
+distribution against which +8.92 is judged.
+:::
 
-So the assumption-ladder move sharpens. **What is assumed:** under the null, an arrival's wait does not
-depend on its label, *and* — supplied by the design, not the data — the labels were assigned by a known
-random mechanism. **What is resampled:** the assignment labels, with outcomes held fixed. **What it
-protects against:** confounding (random assignment balances measured and unmeasured pre-treatment
-characteristics in expectation) and distributional misspecification (no normal model is invoked).
-**What it cannot prove:** that the effect generalizes beyond units like these, or that the study was
-otherwise well run.
+**The experiment, as numbers (nonvisual equivalent).**
 
-### The reference distribution is the design's own null behavior
+| Group | n | Mean yield | Sorted yields (bushels/plot) |
+|---|---|---|---|
+| Control | 10 | 47.88 | 40.8, 41.7, 43.5, 43.6, 43.8, 47.0, 48.2, 52.5, 57.4, 60.3 |
+| Treatment | 10 | 56.80 | 42.9, 49.9, 52.8, 53.9, 54.7, 59.0, 59.7, 61.9, 65.4, 67.8 |
+| **Observed effect** | | **+8.92** | treatment mean − control mean |
 
-Here is the conceptual payoff of random assignment. When labels were assigned by a known chance
-mechanism, the on-computer reshuffle is not a *model* of the null — it *is* the null distribution the
-design would generate if the treatment did nothing. Each reshuffle is one of the assignments the front
-desk *could* have made; the collection of their difference-in-medians is exactly the spread of effects
-the design manufactures from noise alone.
+## Building the randomization distribution
 
-Write the statistic as $T = \tilde y_T - \tilde y_C$, the difference in group medians. Under the
-no-effect null, relabeling cannot change any arrival's wait, so the reshuffled statistics
+There are $\binom{20}{10} = 184{,}756$ ways to split 20 plots into two groups of ten — every one of them
+was equally likely when the experiment was randomized. Enumerating all of them is possible here but
+unnecessary; we approximate the reference distribution by drawing a large **Monte Carlo** sample of
+re-randomizations. Each re-randomization deals the labels afresh and recomputes the treatment-minus-control
+mean.
 
-$$
-T^{(1)}, \; T^{(2)}, \; \dots, \; T^{(B)}
-$$
+::: {#fig-w04-rand-null}
+![Histogram of 10,000 re-randomized treatment-minus-control mean differences, roughly bell-shaped and centered at 0 with a spread of about plus or minus 10; a solid vertical line marks the observed effect of plus 8.92 far out in the right tail, with a note that these are the labels the experiment actually dealt.](../figures/week-04/w04_rand_null.png){fig-alt="Histogram of 10,000 re-randomized treatment-minus-control mean differences, roughly bell-shaped and centered at 0 with a spread of about plus or minus 10; a solid vertical line marks the observed effect of plus 8.92 far out in the right tail, with a note that these are the labels the experiment actually dealt."}
 
-trace out the randomization reference distribution. Because Express and Standard each get $25$ labels
-and the outcomes are fixed, that distribution is **centered at $0$** — a relabeling is as likely to
-favor "Express" as "Standard" when the treatment is inert. The two-sided randomization $p$-value is the
-fraction landing at least as far from $0$ as your observed $T$:
+Randomization distribution of the treatment-minus-control mean difference over 10,000 label
+re-randomizations; centered at 0 with SD 3.71, the observed +8.92 sits far out in the right tail.
+:::
 
-$$
-p_{\text{rand}} = \frac{1}{B}\sum_{b=1}^{B} \mathbf{1}\bigl\{\,|T^{(b)}| \ge |T_{\text{obs}}|\,\bigr\}.
-$$
+::: {.notice}
+**What to notice.** The reference distribution is centered at **0** — under the sharp null, re-labeling
+should help treatment and control equally often, so the *typical* manufactured difference is nothing.
+Its spread (SD ≈ **3.71**) is the natural sampling-to-sampling wobble of the label lottery. The observed
++8.92 is more than two of those SDs out; almost none of the reshuffles reach it.
+:::
 
-This is a tail probability of a distribution the *assignment* produced — which is why, with a real
-random assignment, the same shuffle that gave an associational read last week gives a causal one this
-week. The number did not change; the warrant did.
+**The reference distribution, as numbers.**
 
-### The locked numeric instance: Dataset W, now design-based
+| Quantity | Value |
+|---|---|
+| Re-randomizations (B) | 10,000 |
+| Center (null) | 0 |
+| Randomization SD (spread) | 3.71 |
+| Range of re-randomized differences | −13.9 to +13.6 |
+| Observed effect | +8.92 |
 
-Dataset W is the Riverside service-wait world. Express intake (treatment) versus Standard intake
-(control), wait times in minutes, right-skewed with a couple of very long Standard waits. Data are
-synthetic; seed set. The observed slice is the same one you have carried since week 1:
-
-- Standard arm: $n_C = 25$, **median $= 18$** minutes (mean $\approx 22$, dragged up by two long waits
-  near $64$ and $88$).
-- Express arm: $n_T = 25$, **median $= 12$** minutes (mean $\approx 15$).
-- **Observed effect:** difference in medians $T_{\text{obs}} = 12 - 18 = -6$ minutes — Express is
-  faster. (The difference in *means* is $-7$, but it is unstable because the two long Standard waits
-  move it, so the course reads the resistant median difference.)
-
-Now the design fact that defines this week. Suppose arrivals were **randomly assigned** to the Express
-or the Standard workflow — a coin, not a self-selected queue. Then reshuffling the $50$ labels mimics
-the assignment mechanism exactly. Build the randomization distribution of $T$ by relabeling $25/25$
-about $10{,}000$ times; it is centered at $0$, and the observed $-6$ minutes sits out in the tail. The
-two-sided **randomization $p \approx 0.02$**.
-
-Interpret it. About $2\%$ of random reassignments of these same $50$ waits would manufacture a
-median gap as large as $6$ minutes if the Express workflow did nothing — so a gap this size is
-unlikely to be a fluke of the draw. And because the labels were *assigned at random*, the $-6$ minutes
-reads as the **causal** effect of the Express workflow for arrivals like these: random assignment, not
-the small $p$, is what upgrades "associated with shorter waits" to "shortened waits." The assumption
-ladder: assumed — the known random assignment and the no-effect null; resampled — the $50$ labels;
-protected against — confounding (a busier-or-calmer time of day cannot have sorted patient types into
-arms, because the coin did the sorting) and non-normality (the skew is irrelevant to a label shuffle);
-cannot prove — that other clinics, staff, or seasons would show the same gain.
-
-### The contrast with week 3, stated cleanly
-
-It is worth pinning the contrast down in one place, because the entire week hinges on it.
-
-- **Week 3 (permutation of an observational comparison):** the Express and Standard waits were simply
-  *observed*; no one was assigned. The shuffle is warranted by an *assumed* exchangeability. The
-  permutation $p \approx 0.02$ supports: *Express waits are shifted shorter than Standard waits.* The
-  honest verb is **associational** — a confounder (maybe Express was offered first to calmer arrivals)
-  could explain the shift.
-- **Week 4 (randomization of a designed experiment):** arrivals were *randomly assigned*. The shuffle
-  is warranted by the *known* assignment mechanism. The randomization $p \approx 0.02$ supports: *the
-  Express workflow caused shorter waits for arrivals like these.* The honest verb is **causal** —
-  random assignment rules out the confounder by balancing arms in expectation.
-
-Same data shape, same statistic, same $p \approx 0.02$, same code. **Different design, different
-license.** The randomization test does not get its causal warrant from a smaller $p$; it gets it from
-the assignment, and the $p$ only calibrates how surprising the observed gap would be under the
-no-effect null.
-
-## Worked examples
-
-### Worked example — Dataset W as a randomized service-wait experiment (recurring slice)
-
-**What is assumed.** Arrivals at the Riverside service desk were **randomly assigned**, one at a time,
-to the Express intake workflow ($n_T = 25$) or the Standard workflow ($n_C = 25$) — a designed
-experiment, with the **arrival** as the assigned unit. The outcome is wait time in minutes,
-right-skewed. The null is *no treatment effect*: under it, each arrival's wait is the same whichever
-workflow it drew. Data are synthetic; seed set.
-
-**The computation.** The static R below reframes last week's shuffle as design-based: it pools the
-waits, holds them fixed, re-enacts the random assignment about $10{,}000$ times, and reads the
-randomization $p$ on the difference in medians. It is shown as teaching code and is **not** executed in
-this draft site.
+The R you would run is short — and notice there is **no plotting** in it; the picture is downstream:
 
 ```r
-set.seed(45203)
+# Schematic: the named data objects are the sample(s) described in the text above; this illustrates the analysis, not a self-contained runnable block.
+# design-based randomization test: re-deal the labels the experiment could have produced
+set.seed(45204)
+yield <- c(treatment, control)          # the 20 FIXED outcomes under the sharp null
+label <- rep(c("T", "C"), each = 10)    # the assignment that actually happened
+obs   <- mean(yield[label == "T"]) - mean(yield[label == "C"])
 
-# Dataset W (synthetic; seed set): 25 Express vs 25 Standard service waits, in minutes.
-# Right-skewed; two long Standard waits near 64 and 88 drive the mean but not the median.
-# Summarized to the locked medians for this static slice.
-express  <- c(...)   # n_T = 25, median = 12 min
-standard <- c(...)   # n_C = 25, median = 18 min, two long waits ~64 and ~88
-
-t_obs <- median(express) - median(standard)   # observed effect -> -6 minutes (Express faster)
-
-# Randomization reference distribution.
-# DESIGN FACT: the Express workflow was RANDOMLY ASSIGNED to arrivals, so this reshuffle
-# mimics the assignment mechanism -- it is the design's own null behavior, not a mere model.
-waits <- c(express, standard)                  # pool the 50 outcomes, held fixed
-rand  <- replicate(10000, {
-  lab <- sample(rep(c("E", "S"), each = 25))   # re-enact the random assignment, outcomes fixed
-  median(waits[lab == "E"]) - median(waits[lab == "S"])
+B     <- 10000
+diffs <- replicate(B, {
+  shuffled <- sample(label)             # one label assignment the design could have dealt
+  mean(yield[shuffled == "T"]) - mean(yield[shuffled == "C"])
 })
 
-rand_p <- mean(abs(rand) >= abs(t_obs))        # fraction as extreme as -6  -> ~0.02
-
-# t_obs = -6 min   reference distribution centered at 0   randomization p ~= 0.02
-# The CAUSAL read rests on the random assignment, NOT on the p-value.
+sd(diffs)                                       # spread of the randomization distribution
+(1 + sum(abs(diffs) >= abs(obs))) / (1 + B)     # two-sided p-value, +1 convention
 ```
 
-**The interpretation.** The randomization distribution is centered at $0$, and the observed
-$T_{\text{obs}} = -6$ minutes sits in its tail, giving a two-sided randomization $p \approx 0.02$. In
-words: only about $2\%$ of random reassignments of these $50$ waits would produce a median gap as large
-as $6$ minutes if the Express workflow truly did nothing — so the observed gap is unlikely to be an
-artifact of which arrivals happened to land where. Because the workflow was *assigned at random*, this
-$-6$ minutes is the **causal** effect of Express for arrivals like these: the assignment, not the
-$0.02$, is what licenses the causal verb. The assumption-ladder move, stated plainly: *assumed* — a
-known random assignment plus the no-effect null; *resampled* — the $50$ labels, outcomes fixed;
-*protected against* — confounding and any reliance on a normal model under skew; *cannot prove* — that
-the same effect would appear at a different clinic, with different staff, in a different season (that is
-external validity, which random assignment does not buy).
+## Worked example — the two-sided p-value {#worked_example}
 
-### Worked example — a randomized A/B test of a page layout (transfer, new context)
+We had no prior reason to bet on treatment *helping* rather than *hurting*, so we ask a **two-sided**
+question: how often does re-randomization alone produce a difference **at least as far from zero** as our
++8.92, in *either* direction? That share is the two-sided randomization p-value.
 
-**What is assumed.** A product team wants to know whether a redesigned **page layout** lowers the
-**time on task** for a checkout flow. It enrolls $400$ sessions and, by a random draw, sends $200$ to
-the new layout (treatment) and $200$ to the current layout (control) — a completely randomized A/B
-test with the **session** as the assigned unit. Time on task is heavily right-skewed (a few sessions
-stall for a very long time), so the team uses the **difference in medians** as its statistic, exactly
-as Dataset W does. These numbers are illustrative and distinct from the Riverside world.
+::: {#fig-w04-pvalue}
+![The same randomization histogram with both tails shaded where the absolute difference is at least 8.92; solid and dashed vertical lines mark plus and minus 8.92; an annotation reads two-sided p equals 0.014, the share of shuffles this far from zero in either direction.](../figures/week-04/w04_pvalue.png){fig-alt="The same randomization histogram with both tails shaded where the absolute difference is at least 8.92; solid and dashed vertical lines mark plus and minus 8.92; an annotation reads two-sided p equals 0.014, the share of shuffles this far from zero in either direction."}
 
-**The computation.** Suppose the new layout's median time on task is $48$ seconds and the current
-layout's is $55$ seconds, so the observed statistic is
+The two-sided randomization p-value is the shaded share of re-randomizations with an absolute difference
+at least as large as the observed 8.92: p = 0.014.
+:::
 
-$$
-T_{\text{obs}} = 48 - 55 = -7 \text{ seconds.}
-$$
+::: {.notice}
+**What to notice.** Both tails are shaded — a difference of −8.92 would have been just as surprising as
++8.92. Out of 10,000 reshuffles, only **135** were that extreme, so with the +1 convention
+$p = (1 + 135)/(1 + 10{,}000) = 0.014$. Reading it plainly: **if the treatment did nothing, a gap this
+large would arise from label luck about 1.4% of the time.** The one-sided version (treatment ≥ control)
+is smaller still, $p = 0.007$.
+:::
 
-A randomization test shuffles the $400$ layout labels under the null of no effect, holding each
-session's time fixed, recomputes the median difference each time, and reads the fraction of reshuffles
-with $|T^{(b)}| \ge 7$:
+**Two-sided p-value read-out (nonvisual equivalent).**
 
-```r
-set.seed(45203)
+| Quantity | Value |
+|---|---|
+| Observed effect | +8.92 bushels |
+| Re-randomizations at least as extreme (both tails) | 135 of 10,000 |
+| Two-sided p-value (+1 convention) | 0.014 |
+| One-sided p-value (treatment ≥ control) | 0.007 |
 
-# A/B test (synthetic; seed set): 200 new-layout vs 200 current-layout sessions, time-on-task (sec).
-# Right-skewed; the median resists the long-stall tail. Summarized to the illustrative medians.
-new     <- c(...)   # n = 200, median = 48 sec
-current <- c(...)   # n = 200, median = 55 sec
+The **+1 convention** — adding one to both the count and the denominator — counts the actually-observed
+assignment as one of the possibilities (it is always as extreme as itself). It keeps the p-value from ever
+being exactly zero, which matters because a Monte Carlo run of 10,000 shuffles is only an estimate.
 
-t_obs <- median(new) - median(current)         # -> -7 seconds
+## Permutation last week, randomization this week
 
-times <- c(new, current)                        # pool, hold fixed
-rand  <- replicate(10000, {
-  lab <- sample(rep(c("N", "C"), each = 200))   # re-enact the random assignment
-  median(times[lab == "N"]) - median(times[lab == "C"])
-})
-rand_p <- mean(abs(rand) >= abs(t_obs))         # randomization p for the A/B test
-# t_obs = -7 sec   distribution centered at 0   (illustrative; numbers synthetic)
-```
+The arithmetic this week is identical to last week's permutation test — shuffle labels, recompute,
+count the tail. What changes is the **story that licenses the conclusion.** A permutation test imagines
+an exchangeable *population* and asks whether the labels could be swapped without changing the
+distribution. A randomization test needs no population: the reference distribution is generated by the
+**physical act of randomization the experimenter performed**, so the inference is *design-based*.
 
-**The interpretation.** Because the layout was *assigned at random* to sessions, the $-7$ seconds
-reads as the **causal** effect of the redesign on median time on task for sessions like these — random
-assignment, not a belief that "the new layout is obviously cleaner," is what licenses the causal verb.
-Notice what transferred and what did not: the *design move* is identical to Dataset W — randomly
-assign, pick a resistant statistic, build the reference distribution by re-enacting the assignment, read
-the tail — and only the context, the unit, and the numbers changed. The same assumption ladder applies:
-assumed (the random assignment and the no-effect null); resampled (the $400$ labels); protected against
-(confounding such as time-of-day traffic, and the skew that would wreck a mean-based normal test); and
-unable to prove (that the redesign helps on a different site, audience, or device — external validity
-the A/B test does not settle).
+**Permutation logic (a population and exchangeability) versus randomization logic (the design that was
+actually run): same arithmetic, different warrant for the inference.**
+
+| Aspect | Permutation test (Week 3) | Randomization test (this week) |
+|---|---|---|
+| Where the randomness lives | An assumed exchangeable population | The experiment's own random assignment |
+| Null hypothesis | The two groups share one distribution | Sharp null: no unit gets a different outcome from its label |
+| What is held fixed | The pooled values | The 20 outcomes (potential outcomes under the null) |
+| Warrant for inference | A modelling assumption (exchangeability) | A physical fact (units *were* randomized) |
+| Inference generalizes to | The assumed population | **The units that were randomized** |
+
+::: {.notice}
+**What to notice.** The two columns run the *same* shuffle, so their p-values often coincide — but their
+**warrant** differs. Randomization inference is the sturdier of the two precisely because its "if the
+null were true, here is what could have happened" is not a hope about a population; it is a rerun of the
+coin the experimenter actually flipped.
+:::
 
 ## A common mistake
 
-This week's classic error is **permuting the wrong thing — and, hand in hand with it, over-claiming**
-(the design state's Risk 2). It shows up in two linked forms.
+::: {.misconception}
+**"p = 0.014, so there's a 1.4% chance the treatment does nothing."** No. The p-value is computed
+*assuming* the null is true and reports how often chance re-labeling would manufacture an effect this
+large — it is $P(\text{data this extreme} \mid \text{null})$, **not** $P(\text{null} \mid \text{data})$.
+Two more traps travel with it: a small p-value does **not** mean the effect is *large* (the effect's size
+is +8.92 bushels; the p-value only says it is surprising), and a randomization result generalizes only to
+the **units actually randomized** — these 20 plots — not automatically to every field, crop, or season.
+:::
 
-The first form is **attaching a causal verb to a small $p$ from data that were never randomly
-assigned.** Someone runs the week-3 shuffle on an *observational* Express-vs-Standard comparison, sees
-$p \approx 0.02$, and writes "the Express workflow *caused* shorter waits." The $p$ is fine; the verb is
-not. The reshuffle there is warranted only by an *assumed* exchangeability, so the strongest honest read
-is associational — a confounder (perhaps Express was quietly offered first to calmer, less complicated
-arrivals) could produce the same $-6$ minutes with no causal effect at all. The fix is to keep the
-warrant attached to the data: a randomization test earns "caused" **only** when the labels really were
-assigned by a known random mechanism, and you should be able to point to that mechanism, not to the
-$p$-value, when you justify the causal claim.
+::: {#fig-w04-pvalue-misread}
+![Two-column diagram. Left, labeled WRONG readings, lists three crossed-out claims: a 1% chance the null is true, the effect holds for every field crop and season, and p small so the effect must be large. Right, labeled what p equals 0.014 does say, lists three checked claims: if the treatment did nothing a gap this large arises in only 1.4% of shuffles, the inference is to these 20 randomized plots not the world, and size is the effect plus 8.92 while p is only how surprising it is.](../figures/week-04/w04_pvalue_misread.png){fig-alt="Two-column diagram. Left, labeled WRONG readings, lists three crossed-out claims: a 1% chance the null is true, the effect holds for every field crop and season, and p small so the effect must be large. Right, labeled what p equals 0.014 does say, lists three checked claims: if the treatment did nothing a gap this large arises in only 1.4% of shuffles, the inference is to these 20 randomized plots not the world, and size is the effect plus 8.92 while p is only how surprising it is."}
 
-The second form is **shuffling labels that the design does not let you swap.** If arrivals were assigned
-in *paired* time-slots, or in *blocks* by clinic, or in *clusters* (whole sessions assigned together),
-then a free $25/25$ relabeling no longer re-enacts the real assignment mechanism — it manufactures
-reassignments the design could never have produced, and the reference distribution becomes the wrong
-null. The reshuffle must mimic the *actual* assignment: shuffle within pairs for a paired design, within
-blocks for a blocked design, at the cluster level for a clustered design. Permute the wrong unit and the
-test is simply measuring the wrong thing, however small the resulting $p$ looks.
+Three wrong readings of the p-value (a probability the null is true, generalizing past the units, equating
+small p with a large effect) beside what p = 0.014 actually claims.
+:::
 
-Both forms reduce to one sentence worth memorizing: **the reshuffle mimics the assignment mechanism;
-the causal read rests on the random assignment, not on the $p$-value.** A small $p$ from a broken or
-mis-specified shuffle is a precise description of the wrong null — and a small $p$ from data with no
-random assignment is a precise description of an association, nothing more.
+::: {.notice}
+**What to notice.** Keep the **effect** and the **p-value** as two separate facts. The effect is *how big*
+(+8.92 bushels); the p-value is *how surprising it would be under the null* (0.014). A responsible sentence
+reports both, and names the population it applies to.
+:::
 
-## Low-stakes self-checks (ungraded)
+**The three misreadings, corrected (nonvisual equivalent).**
 
-These are for your own practice — ungraded, no submission.
+| Wrong reading | What is actually true |
+|---|---|
+| "1.4% chance the null is true" | If the null were true, chance labeling gives an effect this big 1.4% of the time |
+| "Holds for every field and season" | Applies to the 20 randomized plots; broader claims need broader randomization |
+| "Small p ⇒ large/important effect" | Size is the effect (+8.92); p only measures surprise |
 
-1. In one sentence each, state the *warrant* for the reshuffle in (a) a week-3 permutation test of an
-   observational comparison and (b) a week-4 randomization test of a designed experiment. Which one lets
-   you write "caused," and why?
-2. The Dataset W randomization distribution is centered at $0$. Explain in your own words *why* it is
-   centered at $0$ under the no-effect null, in terms of what relabeling does to the outcomes.
-3. A colleague reports a randomization $p \approx 0.02$ from an Express-vs-Standard comparison and
-   concludes the Express workflow caused the improvement. What is the *one* fact about the study you must
-   know before you can agree with the word "caused"?
-4. The arrivals were assigned to Express or Standard in matched *pairs* (similar arrival times paired,
-   one of each pair to each arm). Explain why a free $25/25$ relabeling is now the wrong reshuffle, and
-   say how you would fix it.
-5. Someone claims the randomization test is "assumption-free." Name the one structural assumption it
-   still requires, and say where that assumption comes from — the data or the design.
-6. The observed effect is a difference in *medians* of $-6$ minutes rather than a difference in means of
-   $-7$. Give the one-sentence reason the course reads the median difference on Dataset W.
+## Check your understanding (ungraded)
 
-## Reading and source pointer
+1. In a randomization test, what exactly is held **fixed** across all the re-randomizations, and what is
+   allowed to **vary**? Why does that split match how the experiment was actually run?
+2. The randomization distribution was centered at **0**. Explain in one sentence why 0 is its natural
+   center under the sharp null.
+3. Our two-sided p-value was 0.014 and the one-sided was 0.007. Why is the two-sided value roughly twice
+   the one-sided one here, and when would you report each?
+4. A colleague concludes, "p = 0.014, so this fertilizer will raise yields on any farm." Name **two**
+   things wrong with that sentence, using this week's vocabulary.
 
-This week is grounded in the instructor notes (the primary course materials) for the randomization
-test and the design-based causal read, with the **IMS** (Çetinkaya-Rundel & Hardin) treatment of
-**randomization-based hypothesis testing** for the reshuffle logic and the sequence, and the
-**ModernDive** (Ismay, Kim & Valdivia) **`infer` workflow** (specify → hypothesize → generate →
-calculate) for the reproducible reference-distribution pipeline you will build in the companion lab,
-[Lab 4 — Build a randomization test](../labs/lab-04-build-a-randomization-test.qmd). *These notes are
-the course's own synthesis, grounded in but not copied from the sources.* No prose, examples, exercises,
-figures, or solutions are reproduced from any source.
+## Reading guide
 
-## Evidence and verification status
+- **IMS — *Randomization and inference for a difference*** — a conceptual companion to shuffling labels to
+  test a difference; read for the intuition, then check it against the reference distribution above.
+- **OpenIntro Statistics 4e — inference for comparing two means (randomization)** — reinforces the
+  two-group comparison and the tail-area reading of a p-value.
+- **NIST/SEMATECH e-Handbook — *Randomization in the design of experiments*** — an instructor reference on
+  why physical randomization is what licenses design-based inference (cited, not reproduced).
 
-**verified: false.** The method logic on this page is course-authored, but every numeric value here is
-**drafted, synthetic, and not independently checked.** The load-bearing numbers are the Dataset W slice
-— Standard median $18$ minutes, Express median $12$ minutes, the observed difference in medians
-$T_{\text{obs}} = -6$ minutes, the randomization reference distribution centered at $0$, and the
-two-sided **randomization $p \approx 0.02$** — together with the illustrative A/B-test transfer figures
-(median $48$ vs $55$ seconds, $T_{\text{obs}} = -7$). All example data are synthetic with
-`set.seed(45203)` and were not executed here. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+## Accessibility notes
 
-## Public vs. graded
+Mathematics is live text ($\binom{20}{10}$ and $P(\text{data}\mid\text{null})$ render as MathML, not an
+image). Every figure carries an alt line stating its message, a "what to notice" reading, and an adjacent
+data-summary table, so each point survives without the picture. The figures are distinguished by
+**linestyle and hatch**, never by color alone: in the randomization distribution the observed effect is a
+solid teal line and the re-randomized shuffles are an ochre-hatched histogram; in the p-value figure the
+observed effect and its mirror bound are solid and dashed ink lines while the two extreme tails are teal
+cross-hatched bars against plain-grey central bars. A clean lint and a clean render are evidence;
+the rendered assistive-technology review is a human step.
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+## Assessment (descriptive only)
+
+This week contributes learning evidence toward *building a randomization distribution by re-randomizing
+labels* and *stating precisely what a randomization p-value claims*. That is the **shape** only; the
+actual graded prompts, points, and due dates live in Blackboard.
+
+::: {.boundary-note}
+**Public vs. graded.** These are public, ungraded notes and practice. Graded prompts, keys, rubrics,
+point values, and due dates live in **Blackboard Ultra**, which governs.
+:::
 
 ## Looking ahead
 
-Next week we keep Dataset W and the same Express median, but we stop asking "is there a shift?" and
-start asking "how *precise* is the Express median itself?" The bootstrap answers that by **resampling
-each arm with replacement** and recomputing the median — and you will see the median's bootstrap
-distribution come out **lumpy and discrete** (it can only take a handful of order-statistic values),
-with a bootstrap SE of the Express median around $1.2$ minutes. The reshuffle gives way to the
-resample, and a new assumption-ladder trade comes with it: the bootstrap estimates *sampling*
-variability, and — unlike the randomization test — it can fail.
-
-## See also
-
-- [Week 3 — Permutation logic](week-03-permutation-logic.qmd) — the same shuffle, warranted by assumed
-  exchangeability, with an *associational* read.
-- [Week 5 — Bootstrap distributions](week-05-bootstrap-distributions.qmd) — from reshuffling labels to
-  resampling the data; the lumpy median.
-- [Lab 4 — Build a randomization test](../labs/lab-04-build-a-randomization-test.qmd) — shuffle the
-  labels, build the reference distribution, read the randomization $p$.
-- [Methods glossary](../resources/methods-glossary.qmd) — randomization test, assignment mechanism,
-  randomization $p$-value, causal vs. associational read.
-- [Resampling guide](../resources/resampling-guide.qmd) — permutation vs. bootstrap, side by side.
-- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide.
+Next week we stop *testing* a difference and start *estimating* one. The **bootstrap** reuses the
+resampling instinct — but instead of shuffling labels under a null, it resamples the data itself to ask
+how much a summary would **wobble** from sample to sample, and turns that wobble into a confidence
+interval.

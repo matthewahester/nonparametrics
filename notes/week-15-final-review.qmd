@@ -1,400 +1,255 @@
 ---
-title: "Week 15 — Final review"
-subtitle: "One pass over the whole assumption-light arc — which method each data shape calls for, and why"
-page_mode: overview_review_week
-week_contract: public_note
-source_mode: source-informed
-verified: false
-depth_rationale: "One-day synthesis meeting, Dec 7; consolidates the whole assumption-light arc rather than introducing new machinery"
+title: "Week 15 — Final review & method choice"
+subtitle: "The whole course as one decision: reason from the data and the question"
+pagetitle: "Week 15 — Final review & method choice · STAT 45203"
+week: "week-15"
+module: "Synthesis"
+page_standard: public_note
+source_authorization: source_informed
 readings:
-  - "Instructor notes (primary), the assumption-light synthesis — supports the whole-arc review across all four datasets"
+  - "OpenIntro Statistics 4e — Inference for numerical data — synthesis companion (section title only)"
+  - "IMS (Cetinkaya-Rundel & Hardin) — Foundations of inference / bootstrapping — companion"
+  - "Learning Statistics with R (Navarro) — Comparing two means / hypothesis testing — companion"
+  - "NIST/SEMATECH e-Handbook of Statistical Methods — Exploratory data analysis — instructor reference"
 toc: true
 ---
 
-## The week question
+::: {.source-basis}
+**Source basis.** Original instructor-authored review; all data is synthetic (two groups of "response
+times", a fixed generator, seed 45215). Open texts are conceptual companions cited **by section title
+only** (map-don't-mine); no prose, figures, examples, or exercises are reproduced. See
+[Open readings & attribution](../resources/reading-list.qmd). Ungraded — Blackboard is authoritative for
+graded work.
+:::
 
-You have spent a semester learning a dozen ways to ask "what can I responsibly say about this data
-when the standard parametric model is in doubt?" — permutations, randomization, the bootstrap, the
-sign test, signed-rank, rank-sum, ordinal trend tests, robust summaries, robust regression,
-simulation. The final week's question is the one that ties them together: **given a particular data
-shape and a particular question, which assumption-light method does the shape call for, and what
-exactly does that method let you claim?** This is not a new topic — it is the one picture the whole
-course was building toward. There is no new machinery here, only the discipline of *choosing*.
+::: {.thisweek}
+> **This week.** No new method. We step back and ask the question that has run underneath every week:
+> **given this data and this question, how do I choose — and defend — a method?** The answer is not a
+> flowchart lookup. It is a short chain of reasoning that we can now run end to end, and a habit of
+> triangulating an answer with more than one tool.
+:::
 
-## Why this matters
+## Learning goals {#learning_goals}
 
-A course that ends as a list of named tests has failed at its real job. The point of this course was
-never "memorize the Wilcoxon" or "know how to call `boot()`." It was to make four ideas habitual: the
-**empirical distribution** is something you can compute with directly; **exchangeability under a null**
-lets you build a reference distribution by shuffling; **resampling** estimates how much a statistic
-would wobble; and **resistance** lets a summary survive contamination. Every method you met is one of
-those four ideas wearing a particular costume for a particular data shape.
+By the end of this review you should be able to:
 
-That matters because real data arrive shaped — skewed, paired, ordinal, contaminated — and the shape,
-not a normality test, is what should drive your method choice. The skill you are being asked to leave
-with is reading a data shape and a question, naming the candidate methods, and saying out loud what
-each one assumes, what it resamples or ranks or downweights, what it protects against, and what it
-still cannot prove. That last clause is the whole ethic of the course: **assumption-light is never
-assumption-free.** A bootstrap interval is not model-free truth; a rank test still assumes something;
-a robust slope trades efficiency for resistance. If you can name the trade every time, you have the
-course.
+- Walk a **method-choice map** from a data structure and a question to a defensible candidate method.
+- Analyze **one dataset three ways** (t-test, Wilcoxon/Hodges–Lehmann, bootstrap) and read whether the
+  conclusions **triangulate**.
+- Name the **recurring loop** — build a reference distribution, place a quantity on it, read the answer —
+  and recognize it behind testing, estimation, and simulation alike.
+- Explain why method choice is **reasoning, not a lookup**, and what an honest report carries.
 
-## Learning goals
+## The course as one decision {#concept_development}
 
-By the end of this week you should be able to:
+Every week added a tool, but the tools share a spine. We always start from the same two questions:
+*what is fragile here?* and *what do we actually want to know?* Skew, outliers, a pairing, an ordinal
+scale, a small sample — each is a kind of fragility, and each points toward a family of methods that does
+not lean on the assumption that just broke. The map below is the capstone: read the left column for your
+situation, and it names a candidate on the right.
 
-- **Map a data shape to a method.** Given a description (right-skewed, paired and non-normal, ordinal,
-  contaminated, or "I want to know how a method behaves"), name the assumption-light method the shape
-  calls for and say why — without reaching for a normality test first.
-- **State the assumption ladder for any method on the course.** For a chosen method, name (1) what it
-  assumes, (2) what it resamples / ranks / downweights, (3) what it protects against, and (4) what it
-  still cannot prove.
-- **Keep "shuffle to test" and "resample to estimate" straight.** Explain why a permutation test holds
-  labels' meaning fixed and shuffles them under a null, while the bootstrap resamples the data itself
-  to estimate sampling variability — and why each one can fail.
-- **Read a rank or robust result in its own terms.** Interpret a rank-sum result as a probability of
-  superiority (not a mean difference), an ordinal trend test as respecting the scale, and a robust
-  slope as resistance to contamination — and say what each does *not* establish.
-- **Run the four anti-drift checklist on your own writing.** Confirm an analysis is not generic intro
-  stats, not a pure software exercise, not formula-only, and not a disconnected catalog of backup
-  tests.
+::: {#fig-w15-method-map}
+![A two-column decision map. The left column lists data structures and questions; the right column lists candidate methods with the course weeks that introduced them; a green banner across the bottom says to name what is fragile, try at least two methods, compare, and report the estimate with its uncertainty and assumptions.](../figures/week-15/w15_method_map.png){fig-alt="A two-column decision map. The left column lists data structures and questions; the right column lists candidate methods with the course weeks that introduced them; a green banner across the bottom says to name what is fragile, try at least two methods, compare, and report the estimate with its uncertainty and assumptions."}
 
-## Core vocabulary
+A method-choice map: a data structure or question on the left points to a candidate method on the right,
+and the bottom banner names the habit that governs every row.
+:::
 
-This week introduces no new terms; it consolidates the ones that recur. Hold these four organizing
-ideas in front of every method:
+::: {.notice}
+**What to notice.** The map is **not** a lookup that ends the thinking — it *starts* it. Each row is a
+first candidate, not a verdict. The banner is the real rule: name what is fragile, try at least two
+defensible methods, compare, and report the estimate with its uncertainty and its assumptions.
+:::
 
-- **Empirical distribution / ECDF $\hat F_n$** — the data's own distribution,
-  $\hat F_n(x) = \frac{1}{n}\sum_i \mathbf{1}\{x_i \le x\}$. The single engine behind both ranks and the
-  bootstrap: rank tests read its order, the bootstrap samples from it.
-- **Exchangeability under a null** — the assumption that, if the null is true, the group labels are
-  interchangeable tags. It is what licenses a **permutation / randomization reference distribution**
-  built by shuffling labels.
-- **Resampling** — drawing **with replacement** from the data ($\hat F_n$) to approximate a statistic's
-  sampling variability; reported as a **bootstrap SE** or **bootstrap CI** (percentile, basic, BCa).
-- **Resistance / breakdown point** — the fraction of contamination a summary tolerates before it is
-  dragged away: $0$ for the mean, $\approx 0.5$ for the median. The basis of every **robust** summary
-  and slope.
-- **The assumption ladder** — the four-part habit (assumes / resamples-ranks-downweights / protects /
-  cannot prove) the course returns to on every page.
-- **Probability of superiority $P(X < Y)$** — the natural read of a rank-sum result: the chance a
-  random value from one group falls below a random value from the other. A *stochastic shift*, not a
-  difference in means.
+**The map, as a table (nonvisual equivalent).**
 
-## Concept development
+| If the data / question is… | Consider… | Course weeks |
+|---|---|---|
+| Two independent groups; test a difference | Permutation & rank-sum test | 3–4, 8 |
+| One sample; uncertainty of a statistic | Bootstrap SE & percentile CI | 5–6 |
+| Paired / matched, or ordered categories | Sign / signed-rank; ordinal trend | 7, 9 |
+| Outliers / heavy tails; a summary or a fit | Trimmed mean, MAD, robust regression | 10–11 |
+| How does a method behave (error, power)? | Monte Carlo simulation study | 13 |
 
-The semester ran through four data shapes from one synthetic world — the **Riverside Wellness
-Program** — plus a fifth concern, *method behavior itself*. The review is one pass over those shapes.
-For each, the move is the same: name the shape, name the method the shape calls for, then re-state the
-locked numeric instance you already saw, and climb the assumption ladder. **No new numbers appear in
-this review; every figure below is one you met earlier in the course.** All data are synthetic; seed
-set.
+As a **quick walk-through**, take our running dataset: two groups of response times (seconds), group A
+(control, n = 16) and group B (treatment, n = 14), both right-skewed. The question is *is B slower, and by
+how much?* That is a two-group difference with a fragile mean (skew), so the map points at **rank-sum /
+bootstrap** — and, because we also want a *number with an interval*, at estimation, not just a test. That
+is exactly the worked example below.
 
-### Shape 1 — skew (two independent groups): permutation, rank-sum, bootstrap
+## Worked example — one dataset, three methods {#worked_example}
 
-**The idea.** When two independent samples are right-skewed with long tails, the **mean is the wrong
-center and its sampling distribution is the wrong reference**. Three assumption-light moves respond.
-You can **shuffle** the group labels under a null of exchangeability and read the permutation tail
-(testing). You can **rank** the pooled values and read a stochastic shift (rank-sum). You can
-**resample** each group with replacement to see how a resistant statistic like the median wobbles
-(bootstrap). All three lean on the empirical distribution rather than on normality.
+We analyze the same group difference three ways and lay the answers side by side. Group A has mean 10.18 s
+(median 7.1); group B has mean 17.87 s (median 18.05); the observed mean difference is **7.70 s**
+(computed from the unrounded means; subtracting the two rounded means shown gives 7.69).
 
-**The locked instance (Dataset W — service wait times).** Standard $n_C = 25$, median $18$ min, mean
-$\approx 22$ (the right tail drags the mean up); Express $n_T = 25$, median $12$, mean $\approx 15$.
-The observed difference in **medians** is $12 - 18 = -6$ min (Express faster). Shuffling the $50$
-labels $\approx 10{,}000$ times under exchangeability centers the permutation distribution at $0$; the
-observed $-6$ sits in the tail, two-sided permutation $p \approx 0.02$. Pooling and ranking the $50$
-waits gives a probabilistic index $\hat P(\text{Express} < \text{Standard}) \approx 0.72$ with rank-sum
-$p \approx 0.01$. Resampling the Express median gives a bootstrap SE $\approx 1.2$ min; the percentile
-$95\%$ CI for the difference in medians is $\approx (-10, -2)$ min, excluding $0$.
+::: {#fig-w15-three-methods}
+![Left: a histogram of 5000 bootstrap mean differences centered near 7.7 seconds with a shaded 95 percent band and vertical lines at the observed mean difference 7.70 and the Hodges-Lehmann shift 8.15. Right: a forest plot of three 95 percent confidence intervals — t-test, Wilcoxon Hodges-Lehmann, and bootstrap — all sitting well to the right of a dot-dash line at zero.](../figures/week-15/w15_three_methods.png){fig-alt="Left: a histogram of 5000 bootstrap mean differences centered near 7.7 seconds with a shaded 95 percent band and vertical lines at the observed mean difference 7.70 and the Hodges-Lehmann shift 8.15. Right: a forest plot of three 95 percent confidence intervals — t-test, Wilcoxon Hodges-Lehmann, and bootstrap — all sitting well to the right of a dot-dash line at zero."}
 
-**The assumption ladder.** The permutation test *assumes* exchangeability under the null; it
-*resamples* labels (shuffles); it *protects against* the skew that breaks a $t$-based reference; it
-*cannot prove* a causal direction unless the labels were randomly assigned (that is week 4's separate
-move). The rank-sum *assumes* the two distributions differ by a shift (or at least that one
-stochastically dominates); it *ranks* the pooled data; it *protects against* outliers and skew because
-ranks cap a long wait at "largest," not "$88$"; it *cannot* be read as a difference in means — $0.72$
-is a probability of superiority. The bootstrap *assumes* the sample mimics the population well enough
-to resample from; it *protects against* having no formula for the median's SE; it *cannot* be trusted
-for extreme order statistics (see Shape 5 and the common mistake).
+Three methods, one effect: the t-test, the Wilcoxon/Hodges–Lehmann shift, and the bootstrap all put the
+difference near 8 seconds with intervals that clear zero.
+:::
 
-### Shape 2 — paired and non-normal: sign and signed-rank
+::: {.notice}
+**What to notice.** The three intervals **triangulate**. They are not identical — the rank method centers
+a touch higher (8.15 vs 7.70) and the bootstrap interval is a little wider on the left — but every one
+excludes zero and lands near an 8-second slowdown. When several defensible methods agree, your conclusion
+does not hinge on one modeling choice. That agreement is the finding, not any single *p*-value.
+:::
 
-**The idea.** When the same units are measured twice, the two columns are **not independent** — the
-pairing is the structure, and you must analyze the within-pair *differences*, never the two columns as
-if they were two free-standing groups. If those differences are non-normal, two rank moves climb a
-ladder. The **sign test** uses only the *signs* of the differences (the fewest assumptions). The
-**Wilcoxon signed-rank** uses the *signed magnitudes* (a sharper test, one rung up), at the cost of
-assuming the differences are symmetric.
-
-**The locked instance (Dataset S — before/after wellbeing).** On $n = 15$ paired differences
-(after − before), the median difference is $+4$ points; among the $15$, **$11$ positive, $3$ negative,
-$1$ zero** (the zero is dropped, leaving $14$ nonzero). The **mean** difference $+6$ is pulled up by one
-large $+30$ improvement; the **median $+4$** is the resistant summary. The sign test: $11$ of $14$
-positive, compared against Binomial$(14, 0.5)$, two-sided $p \approx 0.057$ — borderline. The
-signed-rank, summing the positive ranks $W^+$, gives $p \approx 0.02$ — sharper, because it uses
-magnitude as well as sign.
-
-**The assumption ladder.** The sign test *assumes* only that, under the null, a positive and a negative
-difference are equally likely; it *resamples nothing* — it reads signs against a binomial; it *protects
-against* any distributional shape of the differences; it *cannot* use the size of an improvement, so it
-is the least powerful rung. The signed-rank *assumes* symmetry of the differences about their median;
-it *ranks* the magnitudes; it *protects against* non-normality while recovering the power the sign test
-left on the table; it *cannot* survive a strongly skewed difference distribution, because then symmetry
-fails. The full ladder for paired data is **sign test $\subset$ signed-rank $\subset$ paired $t$-test**:
-each rung assumes more and, when its assumption holds, pays you back in power.
-
-### Shape 3 — ordinal: rank and ordinal methods, not averaged labels
-
-**The idea.** When the outcome is an ordered category — a $1$–$5$ Likert rating — the numbers are
-*labels with an order*, not measured quantities. Averaging them silently asserts the step from $1$ to
-$2$ equals the step from $4$ to $5$, which you cannot know. The assumption-light move is to **use the
-ordering through ranks** (a Mann–Whitney / ordinal trend test), and to notice that a plain chi-square
-test throws the ordering away.
-
-**The locked instance (Dataset L — satisfaction by arm).** Express arm ($n = 50$) counts
-$[1, 2, 7, 20, 20]$ across categories $1$–$5$; Standard arm ($n = 50$) counts $[3, 8, 16, 13, 10]$. The
-median category is Express $4$, Standard $3$. The mean of the numeric codes (Express $\approx 4.12$,
-Standard $\approx 3.38$) *looks* clean but treats ordinal labels as equally spaced. A rank-based test
-gives $p \approx 0.01$ with a probability of superiority $\approx 0.66$. A **nominal** chi-square test
-of independence gives $\chi^2 \approx 9.9$ on $4$ df, $p \approx 0.04$ — but it treats the five
-categories as *unordered* and throws the ordering away; the **ordinal trend** test, using the order, is
-more powerful here ($p \approx 0.01$).
-
-**The assumption ladder.** The rank/ordinal test *assumes* the categories are ordered and exchangeable
-under the null; it *ranks* the ordinal scores (mid-ranks for ties); it *protects against* the
-false-precision of averaging labels; it *cannot* tell you the *size* of the shift in real units,
-because the scale has no real units. The chi-square *assumes* only independence and adequate expected
-counts; it *protects against* needing any ordering; but in *discarding* the order it leaves power on
-the table whenever the effect is a trend. Respect the scale: use ranks, do not average labels.
-
-### Shape 4 — contamination: robust summaries and robust regression
-
-**The idea.** When a clean structure is spoiled by a few bad points — a data-entry error, a genuine
-extreme responder — least squares and the mean are dragged toward the contamination, because both
-minimize *squared* deviations and one far point dominates the sum. The assumption-light move is
-**resistance**: summarize with the median, a trimmed mean, the MAD; fit with a slope that
-**downweights** far residuals (Theil–Sen, Huber, L1). And the standing rule: **investigate, do not
-auto-delete.**
-
-**The locked instance (Dataset D — engagement vs wellbeing gain).** Clean structure
-gain $\approx 2 + 1.5 \cdot \text{sessions}$, residual SD $\approx 4$, with two contaminating points: a
-high-leverage point at sessions $= 20$, gain $= 2$, and a vertical outlier at sessions $= 5$,
-gain $= 40$. On the gain outcome alone: mean $11$ vs **median $8$** vs $10\%$ trimmed mean $8.3$;
-ordinary SD $9$ (inflated by the $+40$) vs **MAD-based SD $\approx 5$** (resistant). In regression,
-**OLS slope $\approx 0.6$** (the leverage point flattens the line) vs the clean OLS slope $\approx 1.5$;
-the robust fits recover the structure — **Theil–Sen $\approx 1.45$**, **Huber $\approx 1.4$**,
-**L1 $\approx 1.5$**.
-
-**The assumption ladder.** A robust summary *assumes* the bulk of the data is trustworthy and the
-contamination is a minority; it *downweights* (median) or *trims* the extremes; it *protects against*
-a single point with a high breakdown point ($\approx 0.5$ for the median vs $0$ for the mean); it
-*cannot* tell you *whether* the outlier is an error or a real signal — that is a substantive question,
-which is exactly why you investigate rather than delete. A robust slope *assumes* most points follow
-the linear trend; it *downweights* large residuals; it *protects against* leverage and vertical
-outliers; it *cannot* claim more precision than OLS when the data are clean (it trades efficiency for
-resistance — the trade you name every time).
-
-### Shape 5 — method behavior itself: simulation
-
-**The idea.** The four shapes above tell you which method a *given* dataset calls for. Simulation
-answers a different question: across many datasets from a known data-generating process, **how does a
-method behave** — does it hold its nominal Type I error, how much power does it have, does its interval
-cover at the stated rate? You cannot read that off one dataset; you generate many and count.
-
-**The locked instance (the method-comparison simulation).** Comparing the $t$-test, permutation,
-Wilcoxon, and trimmed-mean methods across data-generating processes (synthetic, `set.seed(45203)`):
-under a **Normal** DGP all hold Type I $\approx 0.05$ with comparable power ($t$ slightly best); under a
-**right-skewed (lognormal)** DGP the $t$-test CI under-covers (coverage $\approx 0.91$) while rank-sum
-holds level and gains power; under a **heavy-tailed ($t_3$)** DGP power is $t \approx 0.55$ vs Wilcoxon
-$\approx 0.70$ with permutation holding level; under **contamination ($5\%$ outliers)** the mean-CI
-coverage is $\approx 0.86$ vs trimmed-mean CI coverage $\approx 0.94$. The lesson: **no method wins
-everywhere; match the method to the data-generating reality.**
-
-**The assumption ladder.** A simulation *assumes* the DGP you coded is a fair stand-in for the kind of
-data you care about; it *resamples* nothing from real data — it *generates* fresh draws; it *protects
-against* believing a method's advertised properties without checking them; it *cannot* tell you the
-truth about *your* dataset (its DGP is a model, not your data). That is the honest boundary even on the
-tool you use to study honesty.
-
-## Worked examples
-
-### Worked example — the whole arc on one Riverside slice (recurring)
-
-**What is assumed.** Take the recurring **Dataset W** service-wait comparison and ask the synthesis
-question directly: the data are right-skewed with two very long Standard waits, and you want to know
-whether Express is faster. You assume only that, *under the null of no difference*, the $50$ wait times
-are exchangeable across the two labels — no normality, no equal variances.
-
-**The computation.** The static R below shows the three assumption-light reads on the *same* slice — a
-permutation test of the median difference, the rank-sum probability of superiority, and a bootstrap SE
-for the Express median — using the locked numbers as `# comment` output. It is teaching code, shown,
-not executed.
+The R you would run computes all three — and notice there is **no plotting** in it; the pictures are
+downstream:
 
 ```r
-set.seed(45203)
-
-# Dataset W -- service wait times (minutes), synthetic; seed set.
-# Standard n_C = 25, median 18, mean ~22 (two long waits ~64, ~88).
-# Express  n_T = 25, median 12, mean ~15.  Observed median diff = 12 - 18 = -6 min.
-
-waits  <- c(standard, express)              # 50 pooled waits (locked slice)
-labels <- rep(c("S", "E"), each = 25)
-obs    <- median(express) - median(standard)   # observed diff in medians -> -6 min
-
-# 1) Permutation test: shuffle the 50 labels under exchangeability.
-perm <- replicate(10000, {
-  lab <- sample(labels)                     # relabel, wait times fixed
-  median(waits[lab == "E"]) - median(waits[lab == "S"])
-})
-perm_p <- mean(abs(perm) >= abs(obs))       # two-sided permutation p -> ~0.02
-
-# 2) Rank-sum / Mann-Whitney: rank the pooled 50, read the shift.
-#    P(Express wait < Standard wait) ~= 0.72 ;  rank-sum p ~= 0.01
-
-# 3) Bootstrap the Express median: resample 25 with replacement, many times.
-boot_med <- replicate(10000, median(sample(express, replace = TRUE)))
-boot_se  <- sd(boot_med)                    # bootstrap SE of Express median -> ~1.2 min
-# percentile 95% CI for the difference in medians ~= (-10, -2) min  (excludes 0)
-
-# obs diff = -6   perm p = 0.02   P(E<S) = 0.72   rank-sum p = 0.01   boot SE = 1.2
+# Schematic: the named data objects are the sample(s) described in the text above; this illustrates the analysis, not a self-contained runnable block.
+# one effect, three views (no plotting here — the figure is downstream)
+t.test(B, A)                        # Welch mean-difference CI + p
+wilcox.test(B, A, conf.int = TRUE)  # Hodges-Lehmann shift + rank-based CI
+set.seed(45215)
+d <- replicate(5000, mean(sample(B, replace = TRUE)) - mean(sample(A, replace = TRUE)))
+quantile(d, c(0.025, 0.975))        # bootstrap percentile interval for the mean difference
 ```
 
-**The interpretation.** All three reads agree that Express is faster, and each says it in its own
-currency. The permutation $p \approx 0.02$ says a median gap of $6$ minutes is unusual under
-exchangeability — it *assumes* exchangeability, *shuffles* labels, *protects against* the skew that
-would weaken a $t$-test, and *cannot* claim cause unless the workflow was randomly assigned. The
-rank-sum $\hat P \approx 0.72$ says an Express wait is usually shorter than a Standard one — it *ranks*
-the pooled data, *protects against* the two long waits (a rank caps them), and *cannot* be reported as
-"$6$ minutes faster on average" (that is a different statistic). The bootstrap SE $\approx 1.2$ min
-says the Express median is known to about a minute — it *resamples* the data, *protects against* having
-no median-SE formula, and *cannot* be trusted for the *maximum* wait (the bootstrap can never resample
-beyond the observed largest value). Three methods, one shape, three honest claims — none of them
-"assumption-free."
+**Three methods, as numbers (nonvisual equivalent).**
 
-### Worked example — transfer: delivery times for two courier routes (new context)
+| Method | Estimate (s) | 95% interval (s) | *p*-value |
+|---|---|---|---|
+| Welch *t*-test (mean difference) | 7.70 | [2.43, 12.96] | 0.006 |
+| Wilcoxon / Hodges–Lehmann (shift) | 8.15 | [2.50, 13.30] | 0.009 |
+| Bootstrap (mean difference, B = 5000) | 7.70 | [2.77, 12.49] | — |
 
-**What is assumed.** A logistics team compares **delivery times in minutes** on two courier routes,
-Route A (a new express lane) and Route B (the standard lane), to decide which to keep. The times are
-right-skewed — most deliveries are quick, a handful are stuck in traffic for an hour-plus. This is a
-brand-new context, distinct from the Riverside world. You assume only exchangeability of the route
-labels under the null of no route difference; you do *not* assume normal delivery times. These numbers
-are illustrative and are the same locked W-shape values, reused to show the *method move* transfers —
-no new figures are introduced.
+## The recurring loop across topics
 
-**The computation.** The shape is identical to Dataset W — two independent, right-skewed samples — so
-the method choice is identical. You would compute the difference in **medians** as the resistant effect
-(Route A faster by the locked $6$-minute gap), shuffle the route labels $\approx 10{,}000$ times for a
-permutation $p \approx 0.02$, rank the pooled times for a probability of superiority $\approx 0.72$ that
-a Route A delivery beats a Route B one, and bootstrap the Route A median for an SE $\approx 1.2$ min.
-You would *not* compare the means, because the stuck-in-traffic tail inflates them.
+Here is the thread that ties the syllabus together. Testing, estimation, and even *evaluating a method*
+all run the **same loop**: build a reference distribution, place a quantity on it, and read an answer off
+its shape. Only the reference distribution and the read-off change.
 
-**The interpretation.** Because the *shape* is what drove the choice, the analysis carries straight
-across: skew in two independent groups calls for permutation, rank-sum, and bootstrap, and each is read
-exactly as before. The permutation $p \approx 0.02$ flags a real route difference under exchangeability;
-the $\hat P \approx 0.72$ says a Route A delivery is usually faster (a stochastic shift, not "$6$ minutes
-on average"); the bootstrap SE $\approx 1.2$ pins the Route A median. What did *not* transfer is any
-license to read cause: unless the team *randomly assigned* parcels to routes, Route A's advantage could
-be a confounder (easier neighborhoods). Same shape, same methods, same assumption ladder — only the
-context and the labels changed. That portability *is* the course.
+::: {#fig-w15-loop}
+![Three side-by-side histograms. Left, TESTING: a permutation null of the difference in means with the observed value 7.70 in the shaded tail, p equals 0.006. Middle, ESTIMATION: a bootstrap distribution of the median of group A with a shaded 95 percent interval. Right, EVALUATION: a simulated distribution of the t statistic under a true null with the rejection region shaded and an estimated Type I error of 0.050.](../figures/week-15/w15_loop.png){fig-alt="Three side-by-side histograms. Left, TESTING: a permutation null of the difference in means with the observed value 7.70 in the shaded tail, p equals 0.006. Middle, ESTIMATION: a bootstrap distribution of the median of group A with a shaded 95 percent interval. Right, EVALUATION: a simulated distribution of the t statistic under a true null with the rejection region shaded and an estimated Type I error of 0.050."}
 
-## A common mistake
+The same loop three times: a permutation null gives a *p*-value (0.006), a bootstrap gives an interval,
+and a Monte Carlo simulation gives an error rate (0.050) — different questions, one engine.
+:::
 
-The week's "mistake" is the review-week check itself: **re-state the assumption ladder, then confirm
-none of the four drifts has crept into your reasoning** (this is the running review of Risks 1–15). The
-classic failure at the end of a course like this is to collapse a semester of *reasoning* back into a
-*menu* — "if normality fails, reach for the Wilcoxon" — which quietly violates every value the course
-held. Run the four-point checklist on any analysis you are about to call finished:
+::: {.notice}
+**What to notice.** The three panels answer three *different* questions — is there an effect? how big,
+with what uncertainty? does the method keep its promises? — with one mechanical habit. Testing shades a
+**tail** and reads a proportion; estimation shades a **middle 95%** and reads an interval; evaluation
+shades a **rejection region** and reads a long-run rate. Learn the loop and every topic is a variation.
+:::
 
-- **Not generic intro statistics.** Did you actually use what an empirical distribution, a rank, a
-  permutation, a bootstrap, or a robust estimator lets you claim — or did you just rerun a $t$-test and
-  call it "nonparametric"? The subject is the assumption-light *machinery*, not descriptive summaries
-  and the normal model, which are assumed background (Risks around treating the parametric model as the
-  default).
-- **Not a pure software exercise.** Could you say *what was permuted, resampled, ranked, or
-  downweighted* without pointing at the code? If your justification is "I called `wilcox.test()`," you
-  have described a keystroke, not a method. R *carries out* the logic; it is never the point.
-- **Not formula-only inference.** Did you *build the reference distribution from the data* (shuffle,
-  resample) and read what it assumes — or did you look up a test statistic's null table and stop? A
-  permutation $p$ is a tail of a distribution *you generated*, not a number from a formula sheet.
-- **Not a disconnected catalog of backup tests.** Can you say which of the four core ideas (empirical
-  distribution, exchangeability under a null, resampling, resistance) each method expresses, and how the
-  methods connect (sign $\subset$ signed-rank $\subset$ paired $t$; rank-sum as a stochastic shift;
-  bootstrap and ranks both reading $\hat F_n$)? If your tools feel like an unordered list of "things to
-  try when the t-test fails," the catalog drift has won.
+**The loop, as numbers (nonvisual equivalent).**
 
-If, on a given analysis, you can climb the assumption ladder out loud — assumes / resamples-ranks-
-downweights / protects / cannot prove — and all four anti-drifts hold, you have done the course's
-work. If any rung is missing, that is exactly where to look before you write the conclusion.
+| Job | Reference distribution | What you read off | Value |
+|---|---|---|---|
+| Testing | Permutation null of the mean difference | Two-sided *p*-value | 0.006 |
+| Estimation | Bootstrap distribution of median A | SE and 95% interval | SE 1.87; [6.2, 14.0] |
+| Evaluation | Simulated *t* under a true null | Type I error rate | 0.050 (± 0.003) |
 
-## Low-stakes self-checks (ungraded)
+The four resampling **engines** we met differ in what they hold fixed and what they estimate, even though
+their arithmetic rhymes. It is worth seeing them contrasted in one place.
 
-These are for your own practice — ungraded, no submission.
+| Engine | What is held fixed | What varies | What it estimates | Course week |
+|---|---|---|---|---|
+| Permutation test | The pooled values | Group labels shuffled | Null distribution → *p*-value | 3 |
+| Randomization test | The observed units | The assigned treatment re-drawn | Design-based *p*-value | 4 |
+| Bootstrap | The sample as a stand-in | Resample with replacement | Sampling variability → SE / CI | 5–6 |
+| Monte Carlo simulation | A **known** truth (DGP) | Fresh datasets generated | Method behavior → error, power | 13 |
 
-1. For each shape — right-skewed two-group, paired non-normal, ordinal, contaminated, "how does the
-   method behave" — name in one phrase the assumption-light method it calls for, and the one thing that
-   method *cannot* prove.
-2. A classmate reports the Dataset W rank-sum result as "Express is $6$ minutes faster on average."
-   Name the error and restate the result correctly in terms of a probability of superiority.
-3. Write the three-rung paired ladder (sign test, signed-rank, paired $t$-test) and say, for each rung,
-   one assumption it adds and one thing it buys you in return.
-4. Explain in your own words why averaging the Dataset L Likert codes ($\approx 4.12$ vs $\approx 3.38$)
-   is questionable, and what the rank-based read ($\hat P \approx 0.66$) reports instead.
-5. The OLS slope on Dataset D is $\approx 0.6$ but Theil–Sen is $\approx 1.45$. Say which one to trust
-   and why, and state the standing rule about the two contaminating points.
-6. Run the four-anti-drift checklist on the W worked example above: for each drift, point to the
-   sentence in that example that keeps the drift from happening.
+Four resampling engines compared: what each holds fixed, what it varies, and what it estimates.
 
-## Reading and source pointer
+::: {.notice}
+**What to notice.** Permutation and randomization share the label-shuffle *arithmetic* but differ in
+**warrant** — an exchangeability assumption versus the physical randomization the study actually ran. The
+bootstrap resamples to estimate *variability*, not a *p*-value. Simulation is the odd one out: it invents
+the truth on purpose so we can watch a method succeed or fail.
 
-This synthesis is grounded in the **instructor notes** (the primary course materials) — the source for
-the whole-arc method-chooser logic and the assumption-ladder discipline — drawing the *concepts and
-sequence* of permutation, randomization, and the bootstrap from **IMS** (Çetinkaya-Rundel & Hardin)
-simulation-based-inference topics, the resampling *workflow* posture from **ModernDive** (Ismay, Kim &
-Valdivia), and the *level and vocabulary* of the classical rank-based and robust material from
-**Hollander, Wolfe & Chicken, *Nonparametric Statistical Methods*** (named only as an optional advanced
-reference; no content reproduced). *These notes are the course's own synthesis, grounded in but not
-copied from the sources.* No prose, examples, exercises, figures, or solutions are reproduced from any
-source.
+```r
+# Schematic: the named data objects are the sample(s) described in the text above; this illustrates the analysis, not a self-contained runnable block.
+# the same loop wearing three hats (no plotting)
+mean(abs(perm) >= abs(obs))                 # permutation p-value          (testing)
+quantile(replicate(5000, median(sample(A, replace = TRUE))), c(.025, .975))  # (estimation)
+mean(replicate(4000, t.test(rnorm(14), rnorm(16))$p.value < 0.05))           # Type I error (evaluation)
+```
+:::
 
-## Evidence and verification status
+## Is there one "right" method?
 
-**verified: false.** The synthesis logic and the method-chooser reasoning on this page are
-course-authored, but every numeric value here is **drafted, synthetic, and not independently checked** —
-and this review introduces *no new* numbers; it revisits the locked ones. The load-bearing synthetic
-figures on this page are: for Dataset W, the median difference $-6$ min, permutation $p \approx 0.02$,
-probability of superiority $\approx 0.72$ with rank-sum $p \approx 0.01$, bootstrap median SE
-$\approx 1.2$ min, and percentile CI $\approx (-10, -2)$ min; for Dataset S, the median paired
-difference $+4$, the $11$/$3$/$1$ sign split, sign-test $p \approx 0.057$, and signed-rank
-$p \approx 0.02$; for Dataset L, the counts $[1,2,7,20,20]$ and $[3,8,16,13,10]$, the numeric-code means
-$\approx 4.12$ and $\approx 3.38$, rank-based $p \approx 0.01$ with $\hat P \approx 0.66$, and
-$\chi^2 \approx 9.9$ on $4$ df, $p \approx 0.04$; for Dataset D, median $8$, trimmed mean $8.3$,
-MAD-based SD $\approx 5$, OLS slope $\approx 0.6$ vs clean $\approx 1.5$, Theil–Sen $\approx 1.45$,
-Huber $\approx 1.4$, L1 $\approx 1.5$; and the simulation coverages/powers ($t$-CI $\approx 0.91$ under
-skew, Wilcoxon power $\approx 0.70$ under $t_3$, mean-CI $\approx 0.86$ vs trimmed-mean CI $\approx 0.94$
-under contamination). All study data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+::: {#fig-w15-one-right-method}
+![A two-column contrast. The left column, marked with a red X, is a rigid flowchart: run a normality test, check if p is below 0.05, then grab the nonparametric test or the t-test, and report the single right answer — treating method choice as a mechanical lookup. The right column, marked with a green check, is a reasoning chain: name what is fragile, clarify the purpose, try at least two methods, compare and stress-test, and report the estimate with its uncertainty and assumptions.](../figures/week-15/w15_one_right_method.png){fig-alt="A two-column contrast. The left column, marked with a red X, is a rigid flowchart: run a normality test, check if p is below 0.05, then grab the nonparametric test or the t-test, and report the single right answer — treating method choice as a mechanical lookup. The right column, marked with a green check, is a reasoning chain: name what is fragile, clarify the purpose, try at least two methods, compare and stress-test, and report the estimate with its uncertainty and assumptions."}
 
-## Public vs. graded
+Method choice as a rigid lookup (left, discouraged) versus method choice as reasoning about the data and
+the question (right).
+:::
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints, weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+::: {.notice}
+**What to notice.** The left path outsources judgment to a single normality test and pretends one method
+is *the* answer. The right path treats the map as a starting point, tries more than one method, and
+stress-tests the result. Two datasets can share a normality-test verdict yet need different methods; the
+same data can call for a test, an interval, or a robust fit depending on the question.
+:::
+
+**Two habits, side by side (nonvisual equivalent).**
+
+| Rigid lookup (discouraged) | Reasoned choice (encouraged) |
+|---|---|
+| Run a normality test; branch on *p* < 0.05 | Name what is fragile (skew, outliers, pairing, scale) |
+| Pick "the" one method the branch names | Clarify the purpose (test? estimate? predict?) |
+| Report a single answer | Try ≥ 2 methods; compare; add a sensitivity check |
+| Thinking stops | Report estimate + uncertainty + assumptions |
+
+::: {.misconception}
+**"There is always one correct method — find the right box on the chart."** No. A decision map narrows
+the field; it does not end the reasoning. Nonparametric methods are not a *backup* triggered by a failed
+normality test, and a single significance verdict is not a conclusion. The professional move is to choose
+for a **purpose**, run **more than one** defensible analysis, and report where they agree and where they
+part. Method choice is reasoning, not a lookup.
+:::
+
+## Check your understanding (ungraded)
+
+1. Walk the method-choice map for a study with **matched before/after pairs** and a couple of wild
+   outliers. Which two candidate methods would you try, and why not just one?
+2. The three methods in the worked example all cleared zero and landed near 8 seconds. In your own words,
+   what does that **agreement** buy you that any single *p*-value would not?
+3. Fill in the loop for a **confidence interval for a median**: what is the reference distribution, what
+   quantity do you place on it, and what do you read off?
+4. A classmate says, "the normality test passed, so the *t*-test is the correct method — done." Name two
+   things this skips.
+
+## Reading guide
+
+- **OpenIntro Statistics 4e — *Inference for numerical data*** — a companion for the two-group comparison
+  and interval logic behind the worked example; read for the framing, then check it against the figure.
+- **IMS — *Foundations of inference / bootstrapping*** — reinforces the reference-distribution idea that
+  the recurring loop makes explicit.
+- **Learning Statistics with R — *Comparing two means* / *hypothesis testing*** — a companion for the
+  parametric-versus-rank contrast (cited, not reproduced).
+- **NIST/SEMATECH e-Handbook — *Exploratory data analysis*** — an instructor reference on letting the data
+  structure, not a reflex, drive the method.
+
+## Accessibility notes
+
+Mathematics is live text ($p$, intervals, and rates render as MathML, not images). Every figure carries an
+alt line stating its message, a "what to notice" reading, and an adjacent data-summary table, so each
+point survives without the picture. Distributions and paths are distinguished by **linestyle, hatch, and
+marker** (solid teal = observed/parametric, dashed/hatched ochre = resampled/robust; red ✗ vs green ✓ for
+the discouraged-vs-encouraged habit) plus labels, never color alone. A clean lint and a clean render are
+evidence; the rendered assistive-technology review is a human step.
+
+## Assessment (descriptive only)
+
+This review contributes learning evidence toward *choosing and defending a method for a purpose* and
+*triangulating a conclusion across resampling, rank, and robust tools*. That is the **shape** only; the
+actual graded prompts, point values, and due dates live in Blackboard.
+
+::: {.boundary-note}
+**Public vs. graded.** These are public, ungraded notes and practice. Graded prompts, keys, rubrics,
+point values, and due dates live in **Blackboard Ultra**, which governs.
+:::
 
 ## Looking ahead
 
-Next week there is no next week of new material — this is the last class meeting (Mon Dec 7), and the
-consultation day (Dec 8) and the final-exam window (Dec 9–15, exact block via Blackboard) follow. So
-"looking ahead" means looking *into the final and beyond it*: walk into the exam holding the one
-picture from this review — a data shape on the left, an assumption-light method on the right, and the
-assumption ladder running between them. Beyond the course, the habit is what lasts. The next time real
-data arrive skewed, paired, ordinal, or contaminated, you will not ask "did the normality test pass?"
-You will ask "what is the shape, what does it call for, and what can I honestly claim?" — and you will
-be able to name the trade every time.
-
-## See also
-
-- [Week 8 — Two-sample rank methods](week-08-two-sample-rank-methods.qmd) — the rank-sum / probability-of-superiority read on Dataset W.
-- [Week 7 — Rank-based one-sample & paired methods](week-07-rank-based-one-sample-and-paired-methods.qmd) — the sign / signed-rank ladder on Dataset S.
-- [Week 9 — Categorical & ordinal outcomes](week-09-categorical-and-ordinal-outcomes.qmd) — ordinal vs nominal on Dataset L.
-- [Week 11 — Robust regression ideas](week-11-robust-regression-ideas.qmd) — OLS vs robust slopes on Dataset D.
-- [Week 13 — Simulation study of method behavior](week-13-simulation-study-of-method-behavior.qmd) — how the methods behave across data-generating processes.
-- [Method chooser (decision guide)](../resources/method-chooser.qmd) — the data-shape-to-method walk this review consolidates.
-- [Methods glossary](../resources/methods-glossary.qmd) — the recurring vocabulary in one place.
+That is the course. You leave with a **map** for choosing, a **loop** that unifies testing, estimation,
+and simulation, and a habit of **triangulating and reporting honestly**. Carry all three into your final
+project and into any dataset that does not look the way a textbook promised — which is most of them.

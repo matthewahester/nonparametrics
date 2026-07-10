@@ -55,71 +55,67 @@ website:
         href: notes/index.qmd
         contents:
           - href: notes/index.qmd
-            text: "Notes overview"
-          - section: "Part I — Foundations of assumption-light reasoning (Wk 1–2)"
-            contents:
-              - href: notes/week-01-why-assumption-light-methods.qmd
-                text: "1 — Why assumption-light methods?"
-              - href: notes/week-02-order-statistics-ranks-and-empirical-distributions.qmd
-                text: "2 — Order statistics, ranks & empirical distributions"
-          - section: "Part II — Resampling inference (Wk 3–6)"
-            contents:
-              - href: notes/week-03-permutation-logic.qmd
-                text: "3 — Permutation logic"
-              - href: notes/week-04-randomization-tests.qmd
-                text: "4 — Randomization tests"
-              - href: notes/week-05-bootstrap-distributions.qmd
-                text: "5 — Bootstrap distributions"
-              - href: notes/week-06-bootstrap-confidence-intervals.qmd
-                text: "6 — Bootstrap confidence intervals"
-          - section: "Part III — Rank-based & ordinal methods (Wk 7–9)"
-            contents:
-              - href: notes/week-07-rank-based-one-sample-and-paired-methods.qmd
-                text: "7 — Rank-based one-sample & paired (midterm)"
-              - href: notes/week-08-two-sample-rank-methods.qmd
-                text: "8 — Two-sample rank methods"
-              - href: notes/week-09-categorical-and-ordinal-outcomes.qmd
-                text: "9 — Categorical & ordinal outcomes"
-          - section: "Part IV — Robustness, comparison & synthesis (Wk 10–15)"
-            contents:
-              - href: notes/week-10-robust-summaries-and-outliers.qmd
-                text: "10 — Robust summaries & outliers"
-              - href: notes/week-11-robust-regression-ideas.qmd
-                text: "11 — Robust regression ideas"
-              - href: notes/week-12-comparing-parametric-and-nonparametric-conclusions.qmd
-                text: "12 — Comparing parametric & nonparametric conclusions"
-              - href: notes/week-13-simulation-study-of-method-behavior.qmd
-                text: "13 — Simulation study of method behavior"
-              - href: notes/week-14-applied-robust-methods-report-workshop.qmd
-                text: "14 — Applied robust-methods report workshop"
-              - href: notes/week-15-final-review.qmd
-                text: "15 — Final review"
+            text: "Overview"
+          - href: notes/week-01-why-assumption-light.qmd
+            text: "1 — Why assumption-light methods?"
+          - href: notes/week-02-order-statistics-ranks-ecdf.qmd
+            text: "2 — Order statistics, ranks, ECDFs"
+          - href: notes/week-03-permutation-logic.qmd
+            text: "3 — Permutation logic"
+          - href: notes/week-04-randomization-tests.qmd
+            text: "4 — Randomization tests"
+          - href: notes/week-05-bootstrap-distributions.qmd
+            text: "5 — Bootstrap distributions"
+          - href: notes/week-06-bootstrap-confidence-intervals.qmd
+            text: "6 — Bootstrap confidence intervals"
+          - href: notes/week-07-rank-based-one-sample-paired.qmd
+            text: "7 — Rank-based one-sample & paired"
+          - href: notes/week-08-two-sample-rank-methods.qmd
+            text: "8 — Two-sample rank methods"
+          - href: notes/week-09-categorical-ordinal-outcomes.qmd
+            text: "9 — Categorical & ordinal outcomes"
+          - href: notes/week-10-robust-summaries-outliers.qmd
+            text: "10 — Robust summaries & outliers"
+          - href: notes/week-11-robust-regression-ideas.qmd
+            text: "11 — Robust regression ideas"
+          - href: notes/week-12-comparing-parametric-nonparametric.qmd
+            text: "12 — Comparing conclusions"
+          - href: notes/week-13-simulation-study-method-behavior.qmd
+            text: "13 — Simulation study of method behavior"
+          - href: notes/week-14-applied-robust-methods-report.qmd
+            text: "14 — Applied report workshop"
+          - href: notes/week-15-final-review.qmd
+            text: "15 — Final review"
       - section: "Labs"
         href: labs/index.qmd
         contents:
           - href: labs/index.qmd
-            text: "Labs overview"
-          - href: labs/lab-04-build-a-randomization-test.qmd
-            text: "Lab 4 — Build a randomization test"
-          - href: labs/lab-05-bootstrap-the-median.qmd
-            text: "Lab 5 — Bootstrap the median"
-          - href: labs/lab-11-robust-regression-versus-least-squares.qmd
-            text: "Lab 11 — Robust regression vs least squares"
-          - href: labs/lab-13-a-method-comparison-simulation.qmd
-            text: "Lab 13 — A method-comparison simulation"
+            text: "Overview"
+          - href: labs/lab-01-permutation-test.qmd
+            text: "Lab 1 — Permutation test"
+          - href: labs/lab-02-bootstrap-ci.qmd
+            text: "Lab 2 — Bootstrap CIs"
+          - href: labs/lab-03-rank-methods.qmd
+            text: "Lab 3 — Rank methods"
+          - href: labs/lab-04-robust-summaries-outliers.qmd
+            text: "Lab 4 — Robust summaries & outliers"
+          - href: labs/lab-05-simulation-study.qmd
+            text: "Lab 5 — Simulation study"
       - section: "Resources"
         href: resources/index.qmd
         contents:
           - href: resources/index.qmd
-            text: "Resources overview"
-          - href: resources/methods-glossary.qmd
-            text: "Methods glossary"
-          - href: resources/method-chooser.qmd
-            text: "Method chooser (decision guide)"
-          - href: resources/resampling-guide.qmd
-            text: "Resampling guide (permutation vs bootstrap)"
-          - href: resources/robustness-and-outliers-guide.qmd
-            text: "Robustness & outliers guide"
+            text: "Overview"
+          - href: resources/setup.qmd
+            text: "Software setup (R · Posit · Quarto)"
+          - href: resources/method-comparison-guide.qmd
+            text: "Method-comparison guide"
+          - href: resources/notation-and-glossary.qmd
+            text: "Notation & glossary"
+          - href: resources/project-guidance.qmd
+            text: "Applied project guidance"
+          - href: resources/reading-list.qmd
+            text: "Open readings & attribution"
   page-footer:
     left: "© 2026 Matt Hester · Resampling, Nonparametric & Robust Methods"
     center: "[Matt Hester · matthewhester.com](https://matthewhester.com/)"
@@ -137,5 +133,6 @@ format:
     fontsize: 1.05em
     mainfont: "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
     monofont: "JetBrains Mono, Consolas, Menlo, monospace"
+    html-math-method: mathml   # native MathML (accessible live text) — matches the pages' claim
 # Math renders as MathML/MathJax (accessible text), never as images (docs/05 P7; docs/08 §4).
 # R is shown as static, non-executed ```r fences here, so render is deterministic and R-free.
