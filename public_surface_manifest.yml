@@ -1,0 +1,35 @@
+# Public render allow-list — STAT 45203 Resampling/Nonparametric/Robust Methods (Authoring build).
+# The boundary guard (scripts/check_boundary_render_allowlist.py) reads this file:
+#   * ONLY paths under `public_render` may reach _site/ (fail-safe: nothing else renders);
+#   * `never_render` patterns must NEVER appear on a public surface.
+# A LEAK = a private / LMS / assessment / key path appearing under public_render, or a private-named
+# file on disk that is not excluded. STRUCTURE ONLY; certifies nothing about content security.
+manifest_type: public_surface_manifest
+surface: public
+course: STAT 45203 — Resampling, Nonparametric, and Robust Methods (Fall 2026)
+public_render:               # the ALLOW-LIST — the only paths rendered to the public _site/
+  - index.qmd
+  - syllabus.qmd
+  - schedule.qmd
+  - "notes/*.qmd"
+  - "labs/*.qmd"
+  - "resources/*.qmd"
+  - "figures/**/*.png"       # generated static figure assets referenced by pages
+  - styles.css
+never_render:                # private siblings that must stay off every public surface
+  - "_state/"
+  - "_authoring/"            # private planning: week_plans / visual_plans / manifests / source cards / outline
+  - "run_reports/"
+  - "figures/src/"           # figure GENERATION scripts stay source-side, not published
+  - "assessment_production/"
+  - "bank/"
+  - "private/"
+  - "_lms/"
+  - "lms/"
+  - "*_key.*"
+  - "*answer_key*"
+  - "*rubric_private*"
+  - "*secure_exam*"
+  - "*student_data*"
+# Human-reserved: the public/private boundary CALL when genuinely ambiguous, and the final release /
+# deploy decision. This guard provides EVIDENCE only; a clean scan is never a release.

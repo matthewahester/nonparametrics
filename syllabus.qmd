@@ -1,161 +1,169 @@
 ---
-title: "Syllabus (public companion)"
-subtitle: "Orientation and course shape — Blackboard is authoritative for graded specifics"
+title: "Syllabus"
+subtitle: "STAT 45203 · Resampling, Nonparametric, and Robust Methods · Fall 2026"
 toc: true
 ---
 
-::: {.callout-important}
-This public page is an **orientation companion** to the syllabus, not the operational syllabus itself. It
-describes the *shape* of the course in qualitative terms. It carries no numeric grade weights, no schedules, and
-no submission rules. For everything that counts toward your grade — exact weights, deadlines, policies, and
-submissions — **Blackboard (the LMS) is authoritative**. If this page and Blackboard ever disagree, follow
-Blackboard.
+::: {.source-basis}
+This page is a **public rendering of the course syllabus** for convenient reading. **Blackboard Ultra is
+authoritative** for scheduling, assignment links, project checkpoints, official grades, and any change
+announced during the semester. Where this page and Blackboard differ, Blackboard governs.
 :::
+
+## Course at a glance
+
+| | |
+|---|---|
+| **Course** | STAT 45203 — Resampling, Nonparametric, and Robust Methods |
+| **Section** | 01 · In-person · Mon/Wed/Fri |
+| **Term** | Fall 2026 · Aug 24 – Dec 15, 2026 (last class meeting Dec 7) |
+| **Instructor** | Matthew Hester · `mhester@ualr.edu` (best contact) |
+| **Office** | Math Assistance Center (MAC), Library Commons — Ottenheimer Library, 1st floor |
+| **Software** | R · RStudio / Posit Cloud · Quarto (all free) |
 
 ## Course description
 
-This course studies statistical methods that stay useful when standard parametric assumptions are questionable,
-hard to justify, or not the main point of the analysis. Real data are often skewed, heavy-tailed, ordinal,
-small-sample, or contaminated by outliers. We begin with the question *what can we responsibly infer with weaker
-assumptions?* and then study empirical distributions, order statistics, ranks, permutation logic, randomization
-tests, bootstrap distributions and confidence intervals, rank-based one-sample/paired/two-sample methods,
-categorical and ordinal outcomes, robust summaries, outliers, robust regression ideas, and simulation studies
-that compare method behavior. The course does **not** treat nonparametric methods as a box of backup tests to
-use only after a normality test fails; it treats resampling, ranks, robustness, and simulation as core
-statistical ideas. The emphasis throughout is reasoning, computation, comparison, and interpretation — learning
-how methods behave, what assumptions remain, how to choose a method for a purpose, and how to communicate results
-without overselling them.
+This course studies statistical methods that remain useful when standard parametric assumptions are
+questionable, hard to justify, or not the main point of the analysis. We begin from the question *what
+can we responsibly infer with weaker assumptions?* and study empirical distributions, order statistics,
+ranks, permutation logic, randomization tests, bootstrap distributions and confidence intervals,
+rank-based one-sample/paired/two-sample methods, categorical and ordinal outcomes, robust summaries and
+outliers, robust-regression ideas, and simulation studies that compare how methods behave.
 
-## Who it is for
+The emphasis throughout is **reasoning, computation, comparison, and interpretation** — not memorizing a
+decision chart. You will compare parametric and nonparametric conclusions without automatically treating
+either as more "correct," and communicate what a method does, what it assumes, what it protects against,
+and what it cannot prove.
 
-This course assumes a prior introductory statistics course or comparable preparation: you should be comfortable
-with variables, data tables, graphical and numerical summaries, confidence intervals, hypothesis tests,
-p-values, and basic regression *interpretation*. **Prior probability or inference and prior R are helpful but
-not required** — the course reviews the repeated-sampling ideas it needs and scaffolds the code. The main
-expectation is a willingness to reason about assumptions, write short explanations, compare methods, and revise
-an interpretation after checking a simulation or output.
+## Course goals
 
-## Learning outcomes
+By the end of the course, a student who has done the work should be able to:
 
-By the end of the course, a successful student will be able to:
-
-- Explain why assumption-light methods are useful in applied statistical work.
-- Distinguish parametric, nonparametric, resampling-based, randomization-based, and robust approaches.
+- Explain why assumption-light methods are useful, and distinguish parametric, nonparametric,
+  resampling-based, randomization-based, and robust approaches.
 - Use empirical distributions, ranks, order statistics, and quantiles to summarize data.
-- Explain the logic of permutation tests and randomization tests, and conduct and interpret randomization tests
-  for simple comparison settings.
-- Use bootstrap resampling to approximate sampling variability, construct and interpret bootstrap confidence
-  intervals, and explain what the bootstrap assumes and when it may fail.
-- Apply and interpret rank-based methods for one-sample, paired, and two-sample problems, and analyze ordinal or
-  categorical outcomes with methods appropriate to the measurement scale.
-- Compare means, medians, trimmed means, and other robust summaries; identify outliers and high-influence
-  observations without treating every unusual value as an error.
-- Explain the idea of robust regression and why least-squares regression can be sensitive to unusual
-  observations.
-- Use simulation studies to compare method behavior, compare parametric and nonparametric conclusions without
-  treating one as automatically "correct," and communicate assumption-light analyses clearly.
+- Explain and carry out permutation and randomization tests, and read a *p*-value obtained by
+  simulation.
+- Use the bootstrap to approximate sampling variability, construct and interpret bootstrap confidence
+  intervals, and explain what the bootstrap assumes and when it can fail.
+- Apply and interpret rank-based methods for one-sample, paired, and two-sample problems, and analyze
+  ordinal/categorical outcomes with methods matched to the measurement scale.
+- Compare means, medians, trimmed means, and other robust summaries; identify outliers and influential
+  points without treating every unusual value as an error; and explain the idea of robust regression.
+- Use simulation studies to compare method behavior (Type I error, power, bias, coverage) under
+  different data-generating conditions.
+- Communicate an assumption-light analysis clearly — including what it cannot prove.
+
+## Required materials
+
+- **Primary:** instructor notes, examples, and method guides (this website + Blackboard). These are the
+  main source for weekly definitions, computational examples, simulation templates, and
+  method-comparison guides.
+- **Supplementary open materials:** selected sections from open statistics, inference, modeling, and
+  data-science resources for bootstrap inference, permutation tests, simulation, and regression review.
+  See [Open readings & attribution](resources/reading-list.qmd). Because the course draws on resampling,
+  classical nonparametrics, robust statistics, and simulation-based inference, **no single textbook
+  carries the whole course.**
+- **Software:** R, RStudio or Posit Cloud, and Quarto — all free. See
+  [Software setup](resources/setup.qmd).
+- **Calculator:** any non-graphing scientific calculator (a TI-84 also works). Phones may not be used as
+  calculators on quizzes or exams.
+- **Blackboard Ultra:** the official course home for announcements, assignment links, due dates, and project checkpoints.
+
+*Not used:* Cengage, WebAssign, MyLab, or any paid homework platform.
+
+## Prerequisites
+
+A prior introductory statistics course or comparable preparation. You should be comfortable with
+variables, data tables, graphical and numerical summaries, confidence intervals, hypothesis tests,
+*p*-values, and basic regression interpretation. Prior probability/inference is helpful for
+sampling-variability intuition but is reviewed as needed. Prior R experience is helpful but not
+required — computational examples and labs are scaffolded.
 
 ## Weekly rhythm
 
-This is a lecture/activity course meeting three days a week, and each day has a settled role:
+Most non-exam weeks meet three times:
 
-- **Monday — method concept + checkpoint.** We introduce a resampling, nonparametric, or robust-methods idea,
-  work through examples, and complete a short checkpoint near the end of class.
-- **Wednesday — computation or simulation day.** We implement the method, run simulations, inspect output,
-  visualize behavior, or compare methods under different assumptions.
-- **Friday — quiz / comparison day.** A short quiz on recent material, then we compare parametric and
-  nonparametric conclusions, critique an analysis, or work on a short report component.
+- **Monday — method concept + checkpoint.** Introduce a resampling / nonparametric / robust idea, work
+  examples, short checkpoint near the end of class.
+- **Wednesday — computation or simulation day.** Implement the method, run simulations, inspect output,
+  visualize behavior, compare methods.
+- **Friday — quiz / comparison day.** A short quiz on recent material, then compare parametric vs.
+  nonparametric conclusions or critique an analysis.
 
-This rhythm is the *plan*; the authoritative weekly schedule, including any shifts, lives in Blackboard.
-Attendance is not graded directly, but checkpoints, quizzes, labs, and in-class activities happen during class,
-so consistent attendance matters — the course builds intuition by repeated comparison of formula, simulation,
-output, and interpretation.
+Holiday, exam, and review weeks use an adjusted rhythm shown on the [Schedule](schedule.qmd).
 
-## Assessment shape (indicative — not a contract)
+## Assessments and grading
 
-The table below conveys the **relative emphasis** of each graded category in qualitative terms only. It is
-**not** a grading contract: it carries no percentages and no point values, and the actual weights live in
-Blackboard.
+Graded components (weights below) are collected in class and through Blackboard. **The specific prompts,
+rubrics, point values, and due dates are posted in Blackboard**, which is authoritative.
 
-| Category | Rough emphasis |
-|----------|----------------|
-| Method checkpoints | small |
-| Weekly quizzes | small |
-| Homework and method reports | the largest single category |
-| Resampling and robustness labs | moderate |
-| Midterm | moderate |
-| Applied robust-methods project | moderate |
-| Final exam | small |
+| Category | Weight | Shape (structure only) |
+|---|---:|---|
+| Method checkpoints | 10% | Short in-class artifacts most Mon/Wed; lightly graded; lowest 4 dropped |
+| Weekly quizzes | 10% | Short Friday quizzes on recent material; lowest 2 dropped |
+| Homework & method reports | 25% | Roughly every two weeks; mixed hand-calculation, interpretation, simulation checks, written conclusions; lowest 1 dropped |
+| Resampling & robustness labs | 15% | Short computational activities connecting method logic to code |
+| Midterm exam | 15% | **Fri, Oct 9, 2026**, in class; case- and problem-based; first-half material |
+| Applied robust-methods project | 15% | Final-third project comparing ≥2 methods on a real/simulated problem |
+| Final exam | 10% | Cumulative; university final-exam window **Dec 9–15, 2026** |
 
-Read this as a picture of *where the weight sits*: regular homework and method reports are the backbone of the
-grade, the labs and the two big instruments (midterm, project) carry moderate weight, and the smaller pieces —
-checkpoints, quizzes, and the final — add up around them. For the exact weighting, consult Blackboard.
+**Grade scale:** A 90–100 · B 80–89 · C 70–79 · D 60–69 · F < 60.
 
-## Software and reproducibility
-
-We use **R** (through RStudio or Posit Cloud) and **Quarto**, along with spreadsheets and browser-based tools,
-for permutation and randomization tests, bootstrap intervals, rank methods, robust summaries, outlier
-sensitivity, and simulation studies. Computation supports the reasoning rather than replacing it: you read, edit,
-and run code; interpret output; and write short written conclusions. When software is used, you are expected to
-explain what the code is doing, what is being resampled or ranked, what assumptions remain, and how the output
-supports the conclusion. Setup instructions are on the resource pages.
-
-## AI use (summary)
-
-Generative AI tools may be used as a **study and workflow aid** — to explain a concept a second way, generate
-practice questions, help debug simulation code, suggest ways to visualize a result, or check your understanding
-of a resampling method. They may **not** produce work you submit as your own, complete homework solutions, write
-project explanations, fabricate simulation results, invent interpretations, or replace your responsibility to
-understand and verify the reasoning, and they are **prohibited on quizzes and exams** unless explicitly allowed.
-
-Because resampling and nonparametric methods are highly sensitive to the data-generating process and the
-resampling scheme, AI output must be checked carefully. Many incorrect explanations come from **permuting the
-wrong thing**, resampling rows when the dependence structure should be preserved, treating a bootstrap interval
-as assumption-free, confusing ranks with raw values, ignoring outliers without justification, or claiming a
-nonparametric method has no assumptions. Whenever you use AI on a graded written assignment, lab, code
-submission, or project component, include a brief **AI Use Note** with three labeled lines:
-
-| Field | What to record |
-|-------|----------------|
-| Tool | which assistant you used (with approximate date or version) |
-| Purpose | what you used it for |
-| Verification | how you checked, tested, revised, or validated the output |
-
-**Verification** is the load-bearing line: rerun the code, check the resampling scheme, compare a small
-hand-worked example to the output, confirm what is held fixed under the null, check assumptions against the
-notes, test results under a simulation, or rewrite the explanation in your own words after checking it. The full
-policy lives in Blackboard.
-
-## Materials
-
-You will need:
-
-- **Instructor notes, examples, and method guides** — the primary course materials, posted on this site and in
-  Blackboard.
-- *Introduction to Modern Statistics*, 2nd ed. (Çetinkaya-Rundel & Hardin) — a free supplement, **CC BY-SA 3.0**,
-  at [openintro-ims.netlify.app](https://openintro-ims.netlify.app/), used for the permutation/bootstrap concepts.
-- *Statistical Inference via Data Science: A ModernDive into R and the Tidyverse*, 2nd ed. (Ismay, Kim &
-  Valdivia) — a free supplement, **CC BY-NC-SA 4.0**, at [moderndive.com/v2](https://moderndive.com/v2/), used
-  for the resampling R workflow.
-- *Nonparametric Statistical Methods*, 3rd ed. (Hollander, Wolfe & Chicken, Wiley) — an **optional** classical
-  reference; named and cited only.
-- **R, RStudio or Posit Cloud, and Quarto** (plus spreadsheets or browser tools) — for the labs and simulations.
-- **Blackboard (the LMS)** — for all graded work, dates, and announcements.
-- A **non-graphing scientific calculator** for in-class quizzes; most computation is done in R.
-
-*Not used in this course:* Cengage, WebAssign, MyLab, or any paid homework platform.
-
-## Where things live
-
-Keep the two homes of the course straight:
-
-- **Blackboard (the LMS)** is the **operational** home: graded method checkpoints, quizzes, homework and method
-  reports, resampling and robustness labs, the midterm, the applied robust-methods project, the final exam, all
-  due dates, all submissions, and all grades. It is authoritative.
-- **This public site** is the **public notes** home: weekly notes, labs as study material, resources, and
-  orientation pages. It is ungraded.
-
-::: {.callout-note}
-This companion exists to orient you. Whenever a graded specific is at stake — a weight, a deadline, a policy —
-go to Blackboard, which is authoritative.
+::: {.boundary-note}
+The weights and drop rules above come from the printed syllabus and are public. **Individual graded-item
+content, keys, rubrics, and exact due dates are not published here** — they live in Blackboard.
 :::
+
+## Late work and make-ups
+
+- **Homework, method reports, labs:** accepted up to one week late with a flat 20% penalty; after one
+  week, no credit unless the absence was excused.
+- **Checkpoints and quizzes:** the lowest 4 checkpoints and lowest 2 quizzes are dropped automatically;
+  missed ones ordinarily go into the drop pool with no separate make-up.
+- **Midterm make-ups:** only with a documented excused absence and advance instructor coordination. The
+  **final** follows university policy.
+- **Project checkpoints:** part of the method-comparison process; late checkpoints limit feedback before
+  the final submission.
+
+## AI usage policy (summary)
+
+AI assistants (ChatGPT, Claude, Copilot, Gemini, …) may be used as **study/workflow aids** — concept
+explanations, practice questions, debugging simulation code, visualization suggestions. They **may not**
+produce work you submit as your own, complete homework/project solutions, fabricate simulation results,
+or invent interpretations, and are **prohibited during quizzes and exams** unless explicitly allowed.
+
+Resampling and nonparametric methods are especially easy to get wrong — permuting the wrong thing,
+resampling rows when dependence should be preserved, treating a bootstrap interval as assumption-free,
+confusing ranks with raw values. On any graded written work, lab, code, or project component, include a
+brief **AI Use Note**:
+
+- **Tool** — which assistant, with approximate date/version.
+- **Purpose** — what you used it for.
+- **Verification** — how you checked, tested, revised, or validated the output.
+
+**Verification is the load-bearing line** (rerun the code, check the resampling scheme, hand-work a small
+case, confirm what is held fixed under the null, compare to class notes).
+
+## Calendar & technology
+
+- Non-graphing scientific calculator recommended (TI-84 works); phones may not be used as calculators on
+  quizzes/exams. During quizzes and exams, only explicitly allowed technology may be used.
+- R / Posit Cloud / Quarto / spreadsheets / browser tools may be used for labs, simulations, and the
+  project. When software is used, the goal is to **support** statistical reasoning, not avoid it — you
+  are expected to explain what is being resampled or ranked, what assumptions remain, and how the output
+  supports the conclusion.
+
+**Key dates:** Classes begin Aug 24 · Labor Day (no class) Sep 7 · Midterm Oct 9 · Last day to drop
+Oct 20 · Fall break Nov 22–28 · Last class Dec 7 · Final-exam window Dec 9–15. Full pacing on the
+[Schedule](schedule.qmd).
+
+## Support & policies
+
+- **Math Assistance Center (MAC):** Library Commons — Ottenheimer Library, 1st floor · `tutoring.ualr.edu`
+- **Office hours:** best for method-choice questions, resampling logic, simulation debugging,
+  interpretation, and project planning.
+- **Writing support:** recommended for making method-comparison reports clearer and more audience-aware.
+- **University policies:** Disability Resource Center · Academic Integrity · University Email · Inclement
+  Weather. This syllabus may be updated for clarity or pacing; changes are announced via UA Little Rock
+  email and posted in Blackboard.

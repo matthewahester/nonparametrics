@@ -1,10 +1,14 @@
 /* =============================================================
    Matt course-site shell — reusable course-family styles
    -------------------------------------------------------------
-   Shared theme with matthewhester.com / intro-stats / math-software /
-   bayesian-statistics / intro-probability / statistical-inference: the
-   same stone / crystal / iron palette and a black ("stone-900") top
-   navbar, so every course site feels like one family.
+   STAT 45203 adopts the SHARED course-family shell (Patch: shell
+   normalization). This top section is the family shell used verbatim across
+   matthewhester.com / intro-stats / math-software / bayesian-statistics /
+   intro-probability / statistical-inference / statistical-design /
+   applied-statistics / nonparametrics: the same stone / crystal / iron
+   palette and a black ("stone-900") top navbar, so every course site feels
+   like one family. The STAT 45203 course-local content utilities are kept
+   BELOW this shell (see the second banner).
 
    Design rules:
      - Quarto + Bootstrap (cosmo) handle layout. We only tune colors,
@@ -172,4 +176,100 @@ mjx-container[jax="CHTML"][display="true"] {
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
+}
+
+/* =============================================================
+   STAT 45203 — course-local content utilities (instructional anatomy).
+   -------------------------------------------------------------
+   Additive to the shared course-family shell ABOVE. Preserved unchanged from
+   the course build so the note-page building blocks render exactly as
+   authored: the source-basis provenance strip, the "this week" banner, the
+   "what to notice" figure cue, the "common mistake" callout, the
+   method-choice box, the figure data-table fallback, and the boundary strip.
+   Course-local accent tokens live here — the family shell explicitly allows a
+   course to keep local tokens. Accessibility: colour is never the sole
+   channel — each callout also carries a text label + icon glyph, and the
+   .source-basis / .boundary-note strips carry the public/private boundary
+   signal in live text. Contrast targets WCAG AA (evidence, not a sign-off).
+   ============================================================= */
+:root {
+  --rnr-ink: #1b2733;
+  --rnr-accent: #2a6f97;      /* deep teal — parametric/observed */
+  --rnr-accent2: #b5651d;     /* warm ochre — resampled/robust */
+  --rnr-muted: #5b6b7a;
+  --rnr-rule: #d7dee4;
+}
+
+/* "This week" framing banner at the top of a note. */
+blockquote.thisweek, .thisweek > blockquote {
+  border-left: 4px solid var(--rnr-accent);
+  background: #f2f7fa;
+}
+
+/* Source-basis line: quiet provenance strip (carries the public/private boundary note). */
+.source-basis {
+  font-size: .86rem;
+  color: var(--rnr-muted);
+  background: #f6f8fa;
+  border: 1px solid var(--rnr-rule);
+  border-radius: 6px;
+  padding: .5rem .75rem;
+  margin: .75rem 0 1.25rem 0;
+}
+
+/* Misconception / "common mistake" callout — label carries meaning, not just the red tint. */
+.misconception {
+  border-left: 4px solid #a4373a;
+  background: #fbf1f1;
+  padding: .6rem .9rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+.misconception::before {
+  content: "⚠ Common mistake — ";
+  font-weight: 700;
+  color: #a4373a;
+}
+
+/* "What to notice" reading cue beside a figure. */
+.notice {
+  border-left: 4px solid var(--rnr-accent2);
+  background: #fdf6ef;
+  padding: .6rem .9rem;
+  border-radius: 4px;
+  margin: .75rem 0;
+}
+.notice::before {
+  content: "🔎 ";
+}
+/* Each .notice block also carries the literal label "**What to notice.**" in the source text, so the
+   interpretation cue is present for source-text accessibility tooling, not only via CSS. */
+
+/* Method-choice / assumptions box. */
+.method-choice {
+  border: 1px solid var(--rnr-accent);
+  background: #f2f7fa;
+  border-radius: 6px;
+  padding: .7rem 1rem;
+  margin: 1rem 0;
+}
+
+/* Figure data-table fallback (the nonvisual equivalent) reads as supporting, not primary. */
+.fig-fallback caption, caption.fig-fallback {
+  caption-side: bottom;
+  font-size: .85rem;
+  color: var(--rnr-muted);
+  text-align: left;
+}
+
+/* Content figures stay responsive on small screens (accessibility). */
+figure img, .quarto-figure img { max-width: 100%; height: auto; }
+
+/* Boundary reminder strip on note pages (public/private signal in live text). */
+.boundary-note {
+  font-size: .85rem;
+  color: var(--rnr-muted);
+  border-top: 1px solid var(--rnr-rule);
+  padding-top: .6rem;
+  margin-top: 2rem;
 }

@@ -1,0 +1,64 @@
+---
+title: "Method-comparison guide"
+aliases:
+  - method-chooser.html
+  - resampling-guide.html
+subtitle: "STAT 45203 · what each method estimates, assumes, protects against, and cannot prove"
+toc: true
+---
+
+::: {.source-basis}
+Instructor-authored reference. Original prose; no content is reproduced from any text. This guide
+compresses the weekly notes into one place — it is a study aid, not a decision chart to follow blindly.
+:::
+
+The course's recurring question is *what is fragile here, and what can we still say?* Method choice is a
+piece of **reasoning**, not a lookup. Still, it helps to have the tradeoffs side by side. For each method:
+**what it estimates**, **what it still assumes** (nothing here is assumption-free), **what it protects
+against**, and **what it cannot prove**.
+
+## The master table
+
+| Method | Estimates / tests | Still assumes | Protects against | Cannot prove |
+|---|---|---|---|---|
+| **Mean, SD** | center & spread of a distribution | roughly symmetric, light tails for the SD to summarize spread well | — (it is the thing being stress-tested) | that the center is "typical" when skewed/contaminated |
+| **Median, IQR, ECDF** | center, spread, whole distribution shape | independent observations | outliers, skew, heavy tails | fine structure the ranks discard (exact spacings) |
+| **Permutation test** | a null of **exchangeable labels** | exchangeability under H₀ (units swappable) | non-normal data; no distributional formula needed | causation beyond the compared groups |
+| **Randomization test** | a null from the **actual random assignment** | the randomization actually performed | non-normality; model misspecification | generalization beyond the randomized units |
+| **Bootstrap distribution** | the **sampling variability** of a statistic | the sample represents the population; independence; enough data | reliance on a normal-theory SE formula | the true parameter value; it is centered at your sample |
+| **Bootstrap percentile CI** | a range for the parameter | same as the bootstrap; adequate n; not an extreme statistic | asymmetry a symmetric ±SE interval would miss | exact coverage (it can under/over-cover for small n or skew) |
+| **Sign test** | whether the median difference is 0 (paired) | independent pairs; a meaningful sign | outliers; only the direction is used | magnitude of the effect (it ignores size) |
+| **Wilcoxon signed-rank** | a symmetric-around-zero null for paired differences | independent pairs; symmetry of differences | outliers (uses ranks, not raw sizes) | a mean difference; ties/asymmetry blur it |
+| **Wilcoxon rank-sum / Mann–Whitney** | whether one group is **stochastically larger** | independent groups; (for a clean "shift" reading) similar shapes | non-normality; outliers | a difference in **means**; with different shapes it is not a pure location shift |
+| **Chi-square / exact tests** | association in a contingency table | independence; (chi-square) large enough expected counts | — | the *direction/size* of an ordinal trend (nominal tests ignore order) |
+| **Ordinal / trend tests** | a monotone association honoring order | a sensible ordering of categories | treating ordered data as unordered | that codes are interval-scaled |
+| **Trimmed mean, MAD** | robust center & spread | independence; a chosen trimming fraction | a bounded fraction of outliers (breakdown point) | behavior once contamination exceeds the breakdown point |
+| **Robust regression (Huber/LTS)** | a fit resistant to influential points | a mostly-correct model for the bulk of the data | leverage × residual influence that swings OLS | that the down-weighted points are "wrong" |
+| **Simulation study** | how methods behave (Type I error, power, coverage) under known truths | the simulated data-generating process is relevant | over-trusting one dataset or one formula | anything beyond the conditions you simulated (and Monte Carlo error remains) |
+
+## Reading the table
+
+- **Nothing is assumption-free.** "Nonparametric" narrows the assumptions; it does not remove them.
+  A rank test still assumes independence; a bootstrap still assumes the sample stands in for the
+  population.
+- **"Protects against" is not "immune to."** The bootstrap protects you from leaning on a normal-theory
+  SE — but it fails for an extreme like the maximum (Week 5). Rank methods protect against outliers — but
+  discard the spacings that sometimes matter.
+- **Match the tool to the structure.** Paired data → paired methods (sign / signed-rank), not a
+  two-sample test. Ordinal outcomes → order-aware methods, not a nominal chi-square or an average of
+  codes. A design with real randomization → a randomization test.
+
+## A rough decision sketch (reasoning, not a chart)
+
+1. **What is the outcome's scale?** numeric → ranks/robust/bootstrap; ordinal → order-aware; nominal →
+   contingency/exact.
+2. **What is the structure?** paired vs independent; one sample, two samples, or a regression.
+3. **What is fragile?** skew, heavy tails, small n, outliers, a design where randomization is the story.
+4. **Report at least two methods when it matters**, compare the conclusions, and check sensitivity — the
+   heart of the [applied project](project-guidance.qmd).
+
+## The habit, one more time
+
+Every method above earns trust the same way: **formula → simulation → output → interpretation → method
+choice.** When two reasonable methods agree, say so plainly. When they diverge, that divergence *is* the
+finding — report it honestly rather than picking the answer you like.

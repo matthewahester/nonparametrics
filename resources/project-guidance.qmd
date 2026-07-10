@@ -1,0 +1,80 @@
+---
+title: "Applied robust-methods project — guidance"
+subtitle: "STAT 45203 · the shape of the final-third project"
+toc: true
+---
+
+::: {.source-basis}
+Instructor-authored guidance describing the project **shape** only. The graded checkpoints, rubric,
+point values, and due dates live in **Blackboard**, which is authoritative. Nothing here is a graded
+artifact.
+:::
+
+::: {.boundary-note}
+This page describes what a strong project *looks like*. It does **not** contain the graded rubric,
+point breakdown, or submission deadlines — those are in Blackboard.
+:::
+
+## The idea in one sentence
+
+Find a data setting where **assumptions matter**, analyze it with **at least two reasonable methods**,
+**compare** the conclusions, **investigate sensitivity**, and write a clear report that connects your
+method choice to the structure of the data.
+
+## What makes a good data setting
+
+You may use real data (from an open repository) or simulate data with a known structure. Strong choices
+have a feature that makes method choice *interesting*:
+
+- skew or heavy tails (a mean and a median will disagree),
+- a small sample (large-sample formulas are shaky),
+- outliers or a high-influence point,
+- an ordinal outcome, or
+- a design where randomization is the real basis for inference.
+
+If a *t*-test and a rank test would obviously agree, the setting is too easy to show anything.
+
+## The five moves
+
+1. **Describe the structure and name what is fragile.** Show the data (an ECDF, a histogram, a scatter).
+   State plainly what assumption is questionable and why it matters here.
+2. **Choose at least two methods for a purpose.** For example: mean + *t*-interval **and** median +
+   bootstrap interval; or OLS **and** a robust fit; or a *t*-test **and** a rank-sum test. Say what each
+   method estimates and assumes (the [method-comparison guide](method-comparison-guide.qmd) helps).
+3. **Compare the conclusions.** Put the results side by side. Do they agree? Where do they diverge, and
+   why? Divergence is not a failure — it is often the most informative part.
+4. **Investigate sensitivity.** Re-run with and without an influential point; try a different trimming
+   fraction or a different resampling scheme; change one reasonable choice and see whether the conclusion
+   holds. Report what moved and what didn't.
+5. **Write it up honestly.** State what your method does, what it assumes, what it protects against, and
+   **what it cannot prove.** Do not oversell a single point estimate or a single *p*-value.
+
+## Structure of the report
+
+A workable outline (adapt as needed):
+
+- **Question & data** — what you're asking and where the data came from (or how you simulated it).
+- **What is fragile** — the assumption at stake and the picture that shows it.
+- **Methods** — the two (or more) methods and why each is reasonable here.
+- **Results & comparison** — the conclusions side by side, with a figure.
+- **Sensitivity** — what you varied and what happened.
+- **Honest conclusion** — the defensible takeaway and its limits.
+- **AI Use Note** — Tool · Purpose · **Verification** (see the [syllabus](../syllabus.qmd)).
+
+## Checkpoints
+
+The project runs across the final third of the term with staged checkpoints (a proposal, a
+method-comparison draft, and the final report). **Checkpoints are part of the method-comparison
+process** — late checkpoints limit the feedback available before the final submission. The exact
+checkpoint dates and requirements are in Blackboard.
+
+## Common ways projects go wrong
+
+- Picking a setting where every method agrees (nothing to compare).
+- Running two methods but never actually **comparing** or explaining the difference.
+- Skipping sensitivity — reporting one number as if it were the answer.
+- Treating the nonparametric method as automatically "correct."
+- Overselling: a *p*-value or a point estimate with no interval, no assumptions, no limits.
+
+Office hours are a good place to sanity-check your data setting and your two methods **before** you are
+deep into the report.

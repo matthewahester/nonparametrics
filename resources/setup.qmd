@@ -1,0 +1,72 @@
+---
+title: "Software setup — R · Posit · Quarto"
+subtitle: "STAT 45203 · a working environment in a few minutes"
+toc: true
+---
+
+::: {.source-basis}
+Instructor-authored setup notes. Software is named and linked, not reproduced. Any code shown is
+instructor-original.
+:::
+
+You need a way to run **R**. You have two good options; pick one.
+
+## Option A — Posit Cloud (browser only, nothing to install) {#posit-cloud}
+
+The fastest path, and the one used for in-class labs.
+
+1. Go to **[posit.cloud](https://posit.cloud/)** and make a free account.
+2. Create a new **RStudio** project (New Project → New RStudio Project).
+3. In the **Console**, confirm R works:
+
+```r
+# a first line of R — no packages needed
+x <- c(7, 9, 12, 12, 15, 18, 24, 31)
+median(x)
+sample(x, replace = TRUE)   # one bootstrap-style resample
+```
+
+That's it — you can run every lab this way with no installation.
+
+## Option B — Install locally (R + RStudio) {#local-install}
+
+If you'd rather work offline:
+
+1. Install **R** from **[r-project.org](https://www.r-project.org/)** (choose your operating system).
+2. Install **RStudio Desktop** (free) from **[posit.co/download/rstudio-desktop](https://posit.co/download/rstudio-desktop/)**.
+3. Open RStudio; it finds R automatically. Run the same check as above in the Console.
+
+## Packages we may use
+
+Base R already includes almost everything this course needs — `sample()`, `replicate()`, `median()`,
+`rank()`, `wilcox.test()`, `quantile()`, `lm()`. A few optional packages appear occasionally:
+
+```r
+# Install commands: run once in your own session with internet access (not part of a clean-session data analysis).
+# only if a lab asks for it
+install.packages("boot")     # convenience bootstrap functions
+install.packages("infer")    # tidyverse-style permutation/bootstrap (ModernDive style)
+install.packages("MASS")     # rlm() for a robust regression demo
+```
+
+You will **not** need any paid platform (no Cengage, WebAssign, or MyLab).
+
+## Quarto (optional, for reproducible reports) {#quarto}
+
+Some homework and the project ask for a short reproducible report. **[Quarto](https://quarto.org/)** lets
+you weave R code, output, and writing into one document (this website is built with it). RStudio and
+Posit Cloud include Quarto already — create a new **Quarto Document** from the File menu and click
+**Render**.
+
+## A calculator
+
+A non-graphing scientific calculator is recommended for quizzes and exams (a TI-84 also works). Phones
+may not be used as calculators on quizzes or exams.
+
+## If something breaks
+
+- Re-read the exact error message — it usually names the problem.
+- In labs, confirm you know **what is being resampled or ranked** before debugging the code; a wrong
+  resampling scheme is a *statistics* bug, not an R bug.
+- Bring setup problems to office hours or the **Math Assistance Center** (Ottenheimer Library, 1st
+  floor). Software setup help is also posted in Blackboard when needed.

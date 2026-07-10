@@ -1,49 +1,39 @@
 ---
 title: "Labs"
-subtitle: "The hands-on resampling and robustness strand"
-page-type: orientation
-toc: true
+subtitle: "STAT 45203 · short resampling & robustness activities"
+toc: false
 ---
 
-The labs are where the methods become something you *do*. Four short labs in R and Quarto take a method from the
-notes and let you build it from the ground up — shuffle the labels yourself, resample with replacement yourself,
-fit a robust line yourself, and watch a simulation tell you how a method behaves. The code is shown for study and
-is **not executed on this site**; you run it in your own R session, where the numbers come alive.
+::: {.source-basis}
+Public, **ungraded** lab exemplars — instructor-authored, synthetic data. The graded lab prompts,
+point values, and due dates live in Blackboard. Open texts are cited by section only; no code or prose
+is copied. See [Open readings & attribution](../resources/reading-list.qmd).
+:::
 
-## How the labs work
+These labs connect a method's **logic** to **computation**. Each is short and self-contained: a data
+setting, a small amount of R you can run in Posit Cloud, a picture to interpret, and a written
+conclusion that names what the method assumes and what it protects against. They mirror the graded labs
+in *shape* but are practice — run them, break them, and check the output against the [weekly
+notes](../notes/index.qmd).
 
-Each lab is the hands-on companion to a specific week's note, and follows the same shape:
+Every lab expects the same three habits from the [AI policy](../syllabus.qmd#ai-usage-policy-summary):
+say **what is being resampled or ranked**, **what stays fixed**, and **how you verified the output**.
 
-- **Purpose.** A short blockquote linking the companion note and stating what you will build.
-- **The idea.** The method's logic in plain language — what is being resampled, ranked, or downweighted, and
-  what question the lab answers.
-- **Goal, Setup, Steps.** A fixed seed (`set.seed(45203)`), the synthetic dataset, then three or more steps that
-  build the procedure one move at a time, with shown R at each step.
-- **Verify.** A checklist that reconciles your output against the companion note's locked numbers — a mismatch is
-  a bug in your code, not a discovery about the world.
-- **AI use note.** A Tool / Purpose / Verification table, because verification is the load-bearing habit of the
-  course.
+## The labs
 
-## The four labs
+1. [Permutation test from scratch](lab-01-permutation-test.qmd) — build a null distribution by shuffling
+   group labels and read a *p*-value off it. Pairs with Weeks 3–4.
+2. [Bootstrap confidence intervals](lab-02-bootstrap-ci.qmd) — resample with replacement, form a
+   percentile interval, and see where it disagrees with a *t*-interval. Pairs with Weeks 5–6.
+3. [Rank-based methods](lab-03-rank-methods.qmd) — signed-rank and rank-sum tests, and what ties and
+   ranks throw away. Pairs with Weeks 7–8.
+4. [Robust summaries & outlier sensitivity](lab-04-robust-summaries-outliers.qmd) — mean vs. median vs.
+   trimmed mean under a single contaminating point. Pairs with Week 10.
+5. [A small simulation study](lab-05-simulation-study.qmd) — measure Type I error and power for two
+   competing tests under conditions you control. Pairs with Week 13.
 
-1. [Lab 4 — Build a randomization test](lab-04-build-a-randomization-test.qmd) — shuffle the group labels of the
-   wait-time data to build a reference distribution and read a randomization p-value.
-2. [Lab 5 — Bootstrap the median](lab-05-bootstrap-the-median.qmd) — resample with replacement to see the
-   median's lumpy bootstrap distribution and estimate its standard error.
-3. [Lab 11 — Robust regression vs least squares](lab-11-robust-regression-versus-least-squares.qmd) — watch two
-   contaminating points flatten the least-squares line while a robust fit holds.
-4. [Lab 13 — A method-comparison simulation](lab-13-a-method-comparison-simulation.qmd) — simulate Type I error,
-   power, and coverage for several methods across data-generating processes.
+## How to run them
 
-## Software
-
-You need only R (via RStudio or Posit Cloud) and, optionally, Quarto to knit a report. The labs use base R plus a
-small number of widely available functions; where a package is mentioned (for a robust fit, say), the note names
-it. Every chunk that draws randomness starts with `set.seed(45203)`, so your run reproduces the companion note's
-locked numbers.
-
-## Public vs. graded
-
-These labs are **public and ungraded** — study and practice material only. The graded lab deliverables, their
-rubrics, and their due dates live in **Blackboard (the LMS)**, which is authoritative for submissions and grades.
-If a lab page and Blackboard ever disagree, follow Blackboard.
+You can run every lab in a browser with **Posit Cloud** — no install required — or locally in RStudio.
+See [Software setup](../resources/setup.qmd). Figures on these pages are static (generated ahead of
+time); the R shown is what *you* would run to reproduce them.

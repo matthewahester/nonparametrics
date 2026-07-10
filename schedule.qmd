@@ -1,75 +1,54 @@
 ---
-title: "Schedule (topic flow)"
-subtitle: "A 15-week pacing plan — Blackboard is authoritative for dates and deadlines"
+title: "Schedule at a glance"
+subtitle: "STAT 45203 · Fall 2026 — a pacing plan"
 toc: true
 ---
 
-::: {.callout-important}
-This is a **pacing plan, not a calendar**. It shows the order in which the methods unfold and roughly when, so
-you can read ahead and see where you are headed. It is **not** the authoritative calendar: exact dates,
-deadlines, and any mid-term adjustments live in **Blackboard (the LMS)**, which is authoritative. A few fixed
-semester dates are noted for orientation only — confirm everything against Blackboard.
+::: {.source-basis}
+This is a **pacing plan**. **Blackboard is the authoritative source** for due dates, assignment links,
+project checkpoints, and any changes announced during the semester.
 :::
 
-The course runs fifteen weeks in four parts. Each part below lists its weeks, the theme for each week, and the
-throughline — the question that carries the week. The **theme** links to that week's note.
+## Fifteen weeks
 
-## Part I — Foundations of assumption-light reasoning (Weeks 1–2)
+| Wk | Dates | Theme | What we build |
+|---:|---|---|---|
+| 1 | Aug 24–28 | [Why assumption-light methods?](notes/week-01-why-assumption-light.qmd) | Models, assumptions, robustness, and "what is fragile here?" |
+| 2 | Aug 31–Sep 4 | [Order statistics, ranks, ECDFs](notes/week-02-order-statistics-ranks-ecdf.qmd) | Quantiles, medians, ranks, empirical distributions, distribution-free summaries |
+| 3 | Sep 7–11 | [Permutation logic](notes/week-03-permutation-logic.qmd) | *Sep 7 Labor Day; compressed W/F.* What changes under the null, what stays fixed |
+| 4 | Sep 14–18 | [Randomization tests](notes/week-04-randomization-tests.qmd) | Design-based inference, reassignment, test statistics, *p*-values by simulation |
+| 5 | Sep 21–25 | [Bootstrap distributions](notes/week-05-bootstrap-distributions.qmd) | Resampling with replacement, bootstrap statistics, sampling variability |
+| 6 | Sep 28–Oct 2 | [Bootstrap confidence intervals](notes/week-06-bootstrap-confidence-intervals.qmd) | Percentile intervals, standard-error ideas, interpretation, failure cases |
+| 7 | Oct 5–9 | [Rank-based one-sample & paired](notes/week-07-rank-based-one-sample-paired.qmd) | Sign tests, signed ranks, paired comparisons. **Midterm Fri Oct 9** |
+| 8 | Oct 12–16 | [Two-sample rank methods](notes/week-08-two-sample-rank-methods.qmd) | Rank-sum logic, distributional comparisons, location shifts, interpretation |
+| 9 | Oct 19–23 | [Categorical & ordinal outcomes](notes/week-09-categorical-ordinal-outcomes.qmd) | Ordinal responses, contingency tables, exact logic, scale-aware conclusions |
+| 10 | Oct 26–30 | [Robust summaries & outliers](notes/week-10-robust-summaries-outliers.qmd) | Medians, trimmed means, MAD, resistant summaries, sensitivity checks |
+| 11 | Nov 2–6 | [Robust regression ideas](notes/week-11-robust-regression-ideas.qmd) | Least-squares sensitivity, influential points, resistant fits, diagnostics |
+| 12 | Nov 9–13 | [Comparing conclusions](notes/week-12-comparing-parametric-nonparametric.qmd) | When methods agree, when they diverge, and how to report the difference |
+| 13 | Nov 16–20 | [Simulation study of method behavior](notes/week-13-simulation-study-method-behavior.qmd) | Type I error, power, bias, coverage, robustness, practical performance |
+| — | Nov 22–28 | *Fall break* | No classes |
+| 14 | Nov 30–Dec 4 | [Applied robust-methods report](notes/week-14-applied-robust-methods-report.qmd) | Project workshop: method choice, sensitivity, assumptions, communication |
+| 15 | Dec 7 | [Final review](notes/week-15-final-review.qmd) | Last class meeting; synthesis and final support |
+| — | Dec 9–15 | *Final-exam window* | Exact registrar block announced in Blackboard |
 
-We set up the frame: why weaker assumptions are useful, and the empirical objects — order statistics, ranks, and
-the ECDF — that the rest of the course is built on.
+## Milestones
 
-| Week | Theme | The throughline |
-|------|-------|-----------------|
-| 1 | [Why assumption-light methods?](notes/week-01-why-assumption-light-methods.qmd) | What is fragile in a standard analysis, and what do we do when the model is in doubt? |
-| 2 | [Order statistics, ranks & empirical distributions](notes/week-02-order-statistics-ranks-and-empirical-distributions.qmd) | How do quantiles, ranks, and the ECDF summarize data without a model? |
+- **Midterm exam** — Friday, October 9, 2026 (in class). Covers the first-half material: empirical
+  distributions, ranks, order statistics, permutation logic, randomization tests, bootstrap
+  distributions and confidence intervals, and early rank-based methods.
+- **Applied robust-methods project** — a final-third project: identify a data setting where assumptions
+  matter, apply at least two reasonable methods, compare the conclusions, investigate sensitivity, and
+  write a clear report on the tradeoffs. See [project guidance](resources/project-guidance.qmd).
+- **Final exam** — cumulative; university-scheduled window December 9–15, 2026 (exact block posted in
+  Blackboard).
 
-## Part II — Resampling inference (Weeks 3–6)
+## Important calendar dates
 
-We build inference from the data itself: shuffle labels to test, resample to estimate uncertainty.
-
-| Week | Theme | The throughline |
-|------|-------|-----------------|
-| 3 | [Permutation logic](notes/week-03-permutation-logic.qmd) | Under the null, what stays fixed and what is exchangeable — and what does shuffling test? |
-| 4 | [Randomization tests](notes/week-04-randomization-tests.qmd) | When the reshuffle mimics the assignment mechanism, what does the test license? |
-| 5 | [Bootstrap distributions](notes/week-05-bootstrap-distributions.qmd) | How does resampling with replacement approximate a statistic's sampling variability? |
-| 6 | [Bootstrap confidence intervals](notes/week-06-bootstrap-confidence-intervals.qmd) | How do we turn a bootstrap distribution into an interval — and when does it fail? |
-
-*Note: **Labor Day (Mon, Sep 7)** falls in Week 3 — no class that Monday, so the week runs Wednesday and
-Friday.*
-
-## Part III — Rank-based & ordinal methods (Weeks 7–9)
-
-We move to ranks: one-sample and paired, two-sample, and ordered categories — methods that use order, not the
-raw numbers.
-
-| Week | Theme | The throughline |
-|------|-------|-----------------|
-| 7 | [Rank-based one-sample & paired methods (midterm)](notes/week-07-rank-based-one-sample-and-paired-methods.qmd) | How do the sign test and the signed-rank test trade assumptions for one-sample/paired data? |
-| 8 | [Two-sample rank methods](notes/week-08-two-sample-rank-methods.qmd) | What does the rank-sum test claim, and why is it a shift, not a difference in means? |
-| 9 | [Categorical & ordinal outcomes](notes/week-09-categorical-and-ordinal-outcomes.qmd) | How do we respect the measurement scale of an ordered categorical outcome? |
-
-*Note: the **midterm is Friday, Oct 9** (in class), during Week 7. It covers empirical distributions through
-early rank-based methods. No graded content appears on this public site — see Blackboard.*
-
-## Part IV — Robustness, comparison & synthesis (Weeks 10–15)
-
-We add robustness — resistant summaries and robust regression — then compare methods, simulate their behavior,
-and synthesize.
-
-| Week | Theme | The throughline |
-|------|-------|-----------------|
-| 10 | [Robust summaries & outliers](notes/week-10-robust-summaries-and-outliers.qmd) | Which summaries resist contamination, and how do we find outliers without auto-deleting them? |
-| 11 | [Robust regression ideas](notes/week-11-robust-regression-ideas.qmd) | Why does least squares break under contamination, and how do robust fits hold? |
-| 12 | [Comparing parametric & nonparametric conclusions](notes/week-12-comparing-parametric-and-nonparametric-conclusions.qmd) | When do the methods agree, when do they diverge, and how do we report the difference? |
-| 13 | [Simulation study of method behavior](notes/week-13-simulation-study-of-method-behavior.qmd) | How do Type I error, power, and coverage compare across data-generating processes? |
-| 14 | [Applied robust-methods report workshop](notes/week-14-applied-robust-methods-report-workshop.qmd) | How do you compare methods on a real problem and write an honestly-bounded report? |
-| 15 | [Final review](notes/week-15-final-review.qmd) | How do resampling, ranks, robustness, and simulation fit as one assumption-light practice? |
-
-*Note: **fall break is Nov 22–28** (no classes), between Weeks 13 and 14. The **last class is Mon, Dec 7**, the
-**consultation day is Dec 8**, and the **final-exam window is Dec 9–15** (exact block via Blackboard).*
-
-::: {.callout-note}
-Again: this page is a pacing plan to help you read ahead. For the real calendar — every date, every deadline,
-and any adjustment during the term — **Blackboard (the LMS) is authoritative**.
-:::
+- Classes begin: **Mon, Aug 24, 2026**
+- Labor Day (no class): **Mon, Sep 7, 2026**
+- Midterm: **Fri, Oct 9, 2026**
+- Last day to drop an individual full-term class: **Tue, Oct 20, 2026, 5 p.m.**
+- Fall break (no classes): **Sun Nov 22 – Sat Nov 28, 2026**
+- Last day of class: **Mon, Dec 7, 2026**
+- Consultation day: **Tue, Dec 8, 2026**
+- Final-exam window: **Wed Dec 9 – Tue Dec 15, 2026**

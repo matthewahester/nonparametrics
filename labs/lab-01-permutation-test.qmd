@@ -1,0 +1,266 @@
+---
+title: "Lab 1 — Permutation test from scratch"
+aliases:
+  - lab-04-build-a-randomization-test.html
+subtitle: "Build the null by shuffling labels, then read a p-value off its tail"
+pagetitle: "Lab 1 — Permutation test from scratch · STAT 45203"
+week: "lab-01"
+module: "Lab · Testing by resampling"
+page_standard: public_note
+source_authorization: source_informed
+readings:
+  - "Introduction to Modern Statistics (IMS) — Hypothesis testing with randomization (section title only)"
+  - "Statistical Inference via Data Science: A ModernDive — Hypothesis testing (permutation) — companion"
+  - "OpenIntro Statistics 4e — Inference for comparing two independent means (randomization) — companion"
+toc: true
+---
+
+::: {.source-basis}
+**Source basis.** Original instructor-authored lab; data is synthetic (two groups of ten "engagement
+times" drawn from a fixed generator, seed 45221). Open texts are conceptual companions cited **by
+section title only** (map-don't-mine); no prose, figures, examples, or exercises are reproduced. See
+[Open readings & attribution](../resources/reading-list.qmd). Ungraded — Blackboard is authoritative for
+graded work.
+:::
+
+::: {.thisweek}
+> **In this lab.** Weeks 3–4 argued *why* a permutation test works: under the null the group label is
+> exchangeable, so shuffling the labels manufactures the distribution of differences chance alone can
+> produce. Here you **build that test yourself** — no `t.test`, no lookup table — on a fresh dataset.
+> You will write the shuffle, count the tail, and then do something the weekly notes only gestured at:
+> **verify** your simulated p-value against the exact answer, and watch how badly the estimate wobbles
+> when you use too few shuffles.
+:::
+
+## Lab goals {#learning_goals}
+
+By the end of this lab you should be able to:
+
+- Compute an **observed test statistic** (a difference in group means) and pool the data for relabeling.
+- Write a **from-scratch permutation loop** in R (`sample` + `replicate`) that shuffles the labels and
+  recomputes the statistic, and read the resulting **two-sided p-value** as a tail proportion.
+- **Verify** a Monte-Carlo permutation p-value against the **exact** value from full enumeration, and
+  state what the small `+1` "add-one" convention buys you.
+- Judge **how many shuffles is enough** by watching the estimate stabilize — and explain why a few dozen
+  shuffles is not.
+
+## The setting: an A/B test of two page layouts {#concept_development}
+
+A team runs an A/B test on an article page. Ten readers see **Layout A**, ten see **Layout B**, and the
+response is **engagement time** — how many seconds each reader spends on the page. Layout B *looks*
+stickier: its mean is **59.0 s** against A's **50.4 s**, an observed gap of **+8.6 s**. With only ten
+readers a side, is that gap more than the luck of who-landed-where could produce? That is exactly the
+question a permutation test answers, and this lab builds the answer from nothing but the twenty numbers.
+
+::: {#fig-lab01-data}
+![A two-row strip plot. The lower row (Layout A, open teal circles) shows ten engagement times scattered from about 34 to 70 seconds with a solid vertical mean marker near 50. The upper row (Layout B, hatched ochre squares) shows ten times from about 41 to 72 seconds with a dashed vertical mean marker near 59. A double-headed arrow between the two means is labeled: observed gap = mean(B) minus mean(A) = plus 8.6 seconds.](../figures/lab-01/lab01_data.png){fig-alt="A two-row strip plot. The lower row (Layout A, open teal circles) shows ten engagement times scattered from about 34 to 70 seconds with a solid vertical mean marker near 50. The upper row (Layout B, hatched ochre squares) shows ten times from about 41 to 72 seconds with a dashed vertical mean marker near 59. A double-headed arrow between the two means is labeled: observed gap = mean(B) minus mean(A) = plus 8.6 seconds."}
+
+The two groups of engagement times (synthetic). Layout A (open circles) has mean **50.4 s**; Layout B
+(hatched squares) has mean **59.0 s** — an observed gap of **+8.6 s**.
+:::
+
+::: {.notice}
+**What to notice.** The two groups **overlap heavily** — plenty of Layout A readers stayed longer than
+plenty of Layout B readers. The whole case for "B is stickier" rests on a difference of group *means* of
+8.6 seconds, sitting on top of spread that is several times larger. Eyeballing the strip plot, you should
+already feel unsure whether 8.6 s is a real effect or a lucky split. The permutation test turns that
+feeling into a number.
+:::
+
+**The two groups, as numbers (nonvisual equivalent).**
+
+| Group | Engagement times (sorted, seconds) | n | Mean |
+|---|---|---|---|
+| Layout A | 34, 39, 45, 45, 48, 52, 55, 57, 59, 70 | 10 | 50.4 |
+| Layout B | 41, 47, 52, 57, 58, 63, 64, 68, 68, 72 | 10 | 59.0 |
+| **Observed difference** mean(B) − mean(A) | | | **+8.6** |
+
+## Build the null: shuffle the labels, recompute the gap
+
+The null hypothesis is the sharp claim that **the layout label is irrelevant** — every reader would have
+stayed the same number of seconds regardless of which page they saw. If that is true, the twenty times
+are just twenty times, and the particular split into "A" and "B" we observed is one of many equally likely
+splits. So we **pool** the twenty values, throw away the labels, and re-deal ten "A" tags and ten "B"
+tags at random. Each re-deal gives one difference in means the null could have produced. Do it four
+thousand times and you have traced the null distribution.
+
+Here is the whole engine in R — notice there is **no plotting** in it; the picture is downstream:
+
+```r
+# two groups of engagement times; H0: the layout label is exchangeable
+set.seed(45221)
+timeA <- c(34, 39, 45, 45, 48, 52, 55, 57, 59, 70)
+timeB <- c(41, 47, 52, 57, 58, 63, 64, 68, 68, 72)
+
+obs    <- mean(timeB) - mean(timeA)      # observed difference in means = 8.6
+pooled <- c(timeA, timeB)                # 20 values, labels set aside
+labels <- rep(c("A", "B"), each = 10)
+
+one_diff <- function() {                 # ONE re-deal: shuffle the tags, recompute the gap
+  lab <- sample(labels)                  # exchange labels across the WHOLE pool of 20
+  mean(pooled[lab == "B"]) - mean(pooled[lab == "A"])
+}
+
+B      <- 4000
+perm   <- replicate(B, one_diff())       # the permutation null distribution
+pval   <- mean(abs(perm) >= abs(obs))    # two-sided p-value ~ 0.083
+padd1  <- (1 + sum(abs(perm) >= abs(obs))) / (B + 1)   # the +1 ("add-one") convention
+```
+
+::: {#fig-lab01-perm-null}
+![Histogram of four thousand shuffled mean differences, roughly bell-shaped and centered at zero, ranging from about minus seventeen to plus seventeen seconds. A dotted vertical line marks zero at the center; a solid teal vertical line marks the observed gap at plus 8.6 seconds, out in the right shoulder. A boxed label reads null SD equals 4.9 seconds.](../figures/lab-01/lab01_perm_null.png){fig-alt="Histogram of four thousand shuffled mean differences, roughly bell-shaped and centered at zero, ranging from about minus seventeen to plus seventeen seconds. A dotted vertical line marks zero at the center; a solid teal vertical line marks the observed gap at plus 8.6 seconds, out in the right shoulder. A boxed label reads null SD equals 4.9 seconds."}
+
+Permutation null distribution of the mean difference over **4,000 label shuffles**. It is centered at
+**0** (under the null the label carries no information) with a spread of about **4.9 s**; the observed
+gap **+8.6 s** sits well out in the right shoulder.
+:::
+
+::: {.notice}
+**What to notice.** The null is centered on **zero**, not on 8.6 — because when the label genuinely
+carries no information, a positive shuffled gap is exactly as likely as a negative one. Our observed
+**+8.6 s** is not off the chart, but it is out in the shoulder: only a thin slice of shuffles reach that
+far from zero. *How* thin that slice is, in both directions, is the p-value.
+:::
+
+**Permutation null read-out (nonvisual equivalent).**
+
+| Quantity | Value |
+|---|---|
+| Observed difference $D_\text{obs}$ | +8.6 s |
+| Label shuffles (B) | 4,000 |
+| Null center · null SD | ≈ 0 · ≈ 4.9 s |
+| Shuffles with $|D^{*}| \ge 8.6$ | 333 |
+
+## Worked example — read the p-value off the tail {#worked_example}
+
+Because "Layout B is stickier" and "the layouts differ" are different questions, we test **two-sided**:
+count every shuffle whose gap is at least as far from zero as ours *in either direction*,
+$|D^{*}| \ge 8.6$. That count, divided by the number of shuffles, **is** the p-value — a counting
+statement, not a formula.
+
+::: {#fig-lab01-pvalue}
+![The same permutation null histogram in grey, with both outer tails beyond plus and minus 8.6 seconds shaded and cross-hatched in ochre. A solid teal line marks plus observed at 8.6 and a dashed teal line marks minus observed at minus 8.6. A boxed label reads: shaded tails, absolute difference at least 8.6, p equals 333 over 4000 equals 0.083.](../figures/lab-01/lab01_pvalue.png){fig-alt="The same permutation null histogram in grey, with both outer tails beyond plus and minus 8.6 seconds shaded and cross-hatched in ochre. A solid teal line marks plus observed at 8.6 and a dashed teal line marks minus observed at minus 8.6. A boxed label reads: shaded tails, absolute difference at least 8.6, p equals 333 over 4000 equals 0.083."}
+
+The two-sided permutation **p-value** is the shaded tail area: the share of shuffles with
+$|D^{*}| \ge 8.6$. Here **333 of 4,000**, so **p ≈ 0.083**.
+:::
+
+::: {.notice}
+**What to notice.** Both tails are shaded because the two-sided question does not privilege B over A in
+advance. The observed gap would arise from label-shuffling alone about **8% of the time** — *uncommon,
+but not rare*, and above the conventional 0.05 line. That is an honest verdict for ten readers a side: an
+8.6-second gap you can point to on the strip plot is still well within what pure re-dealing produces. The
+permutation test did not "fail to find an effect"; it reported, correctly, that this much data cannot
+settle the question.
+:::
+
+### Verify it: the exact p-value, and the +1 convention
+
+Four thousand shuffles is a *sample* of the null, so `pval` carries a little Monte-Carlo error. With only
+$\binom{20}{10} = 184{,}756$ ways to split twenty times into two groups of ten, we do not have to sample —
+we can enumerate **every** split and count exactly. Doing so gives **14,870** splits with
+$|D^{*}| \ge 8.6$, an **exact p-value of 0.080**. Our 4,000-shuffle estimate (0.083) lands right on it,
+which is the whole point of Monte-Carlo permutation: sampling the relabelings is a convenience for when
+full enumeration is too large, not a different test.
+
+**P-value read-out (nonvisual equivalent).**
+
+| Quantity | Value |
+|---|---|
+| Two-sided count $\#\{|D^{*}| \ge 8.6\}$ | 333 / 4,000 |
+| Monte-Carlo p-value | 0.083 |
+| With the +1 convention $(1+\#)/(B+1)$ | 0.083 |
+| **Exact** p-value (all 184,756 splits) | 0.080 |
+
+The small `+1` in `padd1` is the **add-one convention**: it counts the observed data as one of its own
+relabelings, so the p-value can never come out *exactly* zero and you get a slightly conservative, honest
+floor. With 4,000 shuffles it barely moves the number (0.083 either way); with a handful of shuffles it
+matters a great deal — which is the next thing to see.
+
+## A common mistake
+
+::: {.misconception}
+**"A permutation p-value is exact — any number of shuffles gives the answer."** It is not. Each shuffle is
+a coin-flip sample of the null, so a p-value built from a *few* shuffles is itself a noisy random number.
+Run "50 shuffles" six times and you can get 0.06 one time and 0.10 the next — a spread wide enough to
+flip a naive "is it below 0.05?" verdict — even though the exact answer never moved. The Monte-Carlo
+p-value only becomes trustworthy as the number of shuffles grows; **too few shuffles is noise dressed up
+as a decimal.**
+:::
+
+::: {#fig-lab01-stabilize}
+![Six ochre trajectories of a running p-value estimate plotted against the number of shuffles B on a logarithmic x-axis from 5 to 5000. On the left the six curves swing wildly between about 0.00 and 0.17; a dotted vertical line at B equals 50 is annotated: at B equals 50 the runs disagree, 0.060 to 0.100. Moving right, the curves converge and by B in the thousands they all press against a solid teal horizontal line marking the exact p of 0.080.](../figures/lab-01/lab01_stabilize.png){fig-alt="Six ochre trajectories of a running p-value estimate plotted against the number of shuffles B on a logarithmic x-axis from 5 to 5000. On the left the six curves swing wildly between about 0.00 and 0.17; a dotted vertical line at B equals 50 is annotated: at B equals 50 the runs disagree, 0.060 to 0.100. Moving right, the curves converge and by B in the thousands they all press against a solid teal horizontal line marking the exact p of 0.080."}
+
+Six independent runs of the p-value estimate as the number of shuffles **B** grows (log scale). At small
+B the runs disagree wildly; by a few thousand shuffles they all settle onto the **exact p = 0.080**.
+:::
+
+::: {.notice}
+**What to notice.** Read the picture right-to-left. On the right, all six runs are pinned to the exact
+value — thousands of shuffles give an estimate you can trust to the third decimal. On the left, the *same*
+computation is chaos: at **B = 50** the six runs range from **0.060 to 0.100**, straddling the 0.05 line a
+careless reader might anchor on. Nothing about the data changed between the two ends of the plot — only
+the number of shuffles. When you build a permutation test, use thousands of shuffles, and if a decision
+hangs on the third decimal, **enumerate**.
+:::
+
+**Stabilization read-out (nonvisual equivalent).**
+
+| Number of shuffles B | Spread of the p-value estimate across 6 runs |
+|---|---|
+| 50 | 0.060 to 0.100 |
+| 5,000 | 0.080 to 0.087 |
+| Exact (all 184,756 splits) | 0.080 |
+
+## Check your understanding (ungraded)
+
+1. Before any shuffling, what single number is the **observed statistic** here, and what is the pooled set
+   the shuffle draws from? Say in one sentence what each shuffle keeps fixed and what it changes.
+2. The permutation null was centered at **0** even though Layout B's mean was 8.6 s higher. Explain, in
+   terms of exchangeability, why the *center* of the null does not depend on how far apart the groups look.
+3. The two-sided p-value came out **333/4,000 ≈ 0.083**. Describe in one sentence exactly what the number
+   333 counts, and why both tails are included.
+4. A classmate runs the shuffle **50 times**, gets p = 0.04, and reports "significant." Using the
+   stabilization figure, explain what is wrong with that claim and what you would tell them to do instead.
+5. The exact p-value was **0.080** and the 4,000-shuffle estimate was **0.083**. Which one would you quote
+   in a report, and why is the gap between them *not* evidence that either calculation is wrong?
+
+## Reading guide
+
+- **Introduction to Modern Statistics (IMS) — *Hypothesis testing with randomization*** — the closest
+  conceptual companion to this lab's shuffle-the-labels logic; read it for a second voice on why the
+  re-deal builds the null, then check it against the figures above.
+- **A ModernDive — *Hypothesis testing*** — a hands-on companion that carries out permutation tests with
+  the `infer` verbs; useful for seeing the same steps expressed as tidy code, *after* you have built the
+  loop by hand (cited, not reproduced).
+- **OpenIntro Statistics 4e — *Inference for comparing two independent means (randomization)*** —
+  reinforces the two-group setup and the two-sided tail reading you practiced here.
+
+## Accessibility notes
+
+Mathematics is live text ($D_\text{obs} = \bar{x}_B - \bar{x}_A$ and $\binom{20}{10}$ render as MathML,
+not images). Every figure carries an alt line stating its message, an adjacent "what to notice" reading,
+and a data-summary table, so each point survives without the picture. Groups are distinguished by
+**marker shape and hatch** (Layout A open circles, Layout B hatched squares), the observed value by a
+**solid line** and its mirror by a **dashed line**, and the null tails by **cross-hatch plus a boxed
+p-value label**, never by color alone. A clean lint and a clean render are evidence, not a substitute for
+the human assistive-technology review.
+
+## Assessment (descriptive only)
+
+This lab contributes learning evidence toward *building a permutation null by relabeling*, *reading a
+two-sided p-value as a tail proportion*, and *verifying a simulated p-value against an exact one*. That is
+the **shape** only; the actual graded lab prompt, weights, and due dates live in Blackboard.
+
+::: {.boundary-note}
+**Public vs. graded.** This is a public, ungraded lab exemplar. The graded lab prompt, keys, rubrics,
+weights, and due dates live in **Blackboard Ultra**, which governs.
+:::
+
+## Looking ahead
+
+You built a test that asks *is this difference more than chance?* The next lab keeps the resampling engine
+but changes the question: instead of shuffling labels to test a difference, you will **resample one group
+with replacement** to put an honest **interval** around an estimate — the bootstrap confidence interval of
+Weeks 5–6. Same habit of manufacturing a distribution from the data you have; a different thing to learn
+from it.

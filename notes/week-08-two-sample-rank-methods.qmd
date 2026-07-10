@@ -1,371 +1,291 @@
 ---
 title: "Week 8 — Two-sample rank methods"
-subtitle: "What the rank-sum test claims, and why it is a shift, not a difference in means"
-page_mode: normal_week
-week_contract: public_note
-source_mode: source-informed
-verified: false
+subtitle: "Wilcoxon rank-sum, Mann–Whitney, and what a rank test really compares"
+pagetitle: "Week 8 — Two-sample rank methods · STAT 45203"
+week: "week-08"
+module: "Rank methods"
+page_standard: public_note
+source_authorization: source_informed
 readings:
-  - "ModernDive (Ismay, Kim & Valdivia), comparing two groups — supports the rank-based two-sample workflow; Nonparametric Statistical Methods (Hollander, Wolfe & Chicken), rank-sum / Mann-Whitney — optional advanced reference (NAMED/CITED ONLY)"
+  - "IMS (Cetinkaya-Rundel & Hardin) — Comparing two independent groups — conceptual companion (section title only)"
+  - "Learning Statistics with R (Navarro) — nonparametric alternatives to the two-sample t-test — instructor reference"
+  - "NIST/SEMATECH e-Handbook of Statistical Methods — two-sample rank-based location tests — companion"
 toc: true
 ---
 
-## The week question
+::: {.source-basis}
+**Source basis.** Original instructor-authored notes; data is synthetic (two groups of "recovery
+times" in days, drawn from a fixed generator, seed 45208). Open texts are conceptual companions
+cited **by section title only** (map-don't-mine); no prose, figures, examples, or exercises are
+reproduced. See [Open readings & attribution](../resources/reading-list.qmd). Ungraded —
+Blackboard is authoritative for graded work.
+:::
 
-You have two groups of numbers — Express waits and Standard waits — and you want to know whether one
-group runs systematically lower than the other. The two-sample $t$-test would answer by comparing the
-two *means*, but you already know from earlier weeks that the wait-time means are dragged around by a
-couple of very long Standard waits. So this week's question is narrow and specific: **when you pool the
-two groups, rank everything, and compare the groups by their ranks, what exactly are you measuring — and
-why is the honest answer a *shift* (a probability that one group runs lower than the other), and not a
-difference in means?** The Wilcoxon rank-sum test, equivalently the Mann–Whitney $U$, is the method that
-answers it, and reading its output correctly is the entire skill this week.
+::: {.thisweek}
+> **This week.** Last week we ranked *within-pair differences* for matched data. Now the two groups
+> are **independent** — different patients under two care plans — so there is no pairing to lean on.
+> The move is the same rank idea scaled up: **pool both groups, rank everything together, and ask
+> whether one group's ranks run systematically high.** That is the Wilcoxon rank-sum test, and its
+> twin the Mann–Whitney *U*. The null is the permutation null you already met in Weeks 3–4.
+:::
 
-## Why this matters
-
-The two-sample comparison is the most common question in applied statistics: does this group differ from
-that one? When the data are roughly normal and the spreads are similar, the $t$-test is a fine tool and
-its difference-in-means summary is exactly what you want. But real service-wait data — like Dataset W —
-are **right-skewed with a few extreme values**, and in that setting the mean is not a stable summary and
-the $t$-test's standard error gets inflated by the long tail. A method built on **ranks** sidesteps the
-problem: it never uses the raw size of the longest wait, only its *position* in the pooled ordering, so
-one monstrous wait counts as "the largest," not as "88, which is enormous." That is what makes the
-rank-sum resistant to the tail that breaks the mean.
-
-But resistance comes with a relabeling of the question, and that relabeling is where most people go
-wrong. The rank-sum does **not** test "is the Express mean lower than the Standard mean." It tests a
-*stochastic-shift* hypothesis — roughly, "is an Express wait usually shorter than a Standard wait" — and
-its most honest effect summary is a **probability**, $P(\text{Express} < \text{Standard})$, called the
-probability of superiority or the probabilistic index. Report a rank-sum result as a difference in means
-and you have reported a number the test never estimated. This week makes the rank-sum's actual claim
-precise, so that the small $p$-value you get is attached to the right sentence. It is the two-sample
-companion to last week's paired and one-sample rank methods, and the bridge into the ordinal outcomes of
-Week 9.
-
-## Learning goals
+## Learning goals {#learning_goals}
 
 By the end of this week you should be able to:
 
-- Describe the **pool-and-rank** procedure: combine both groups, rank all observations from smallest to
-  largest, and use **mid-ranks** for ties.
-- Compute (conceptually) the **Wilcoxon rank-sum statistic** $W$ — the sum of ranks in one group — and
-  its equivalent **Mann–Whitney $U$**, and explain why the two are the same test.
-- Convert $U$ into the **probabilistic index** $\hat P(X < Y)$ — the probability of superiority — and
-  read it as the test's natural effect size.
-- State, in one sentence, what the rank-sum's null and alternative actually say (a **stochastic shift**,
-  often phrased as a location shift), and why that is *not* a difference in means.
-- Name the assumption-ladder move for the rank-sum: what it assumes (exchangeability under the null;
-  for the shift reading, similar group shapes), what it ranks, what that protects against (a heavy
-  upper tail), and what it still cannot prove (a clean difference in means; a mechanism).
+- **Pool and rank** two independent samples and compute the **rank-sum** $W$ of one group.
+- Convert between the rank-sum $W$ and the **Mann–Whitney** $U$, and read $U/(n_1 n_2)$ as an
+  estimate of $P(A > B)$.
+- Build the **permutation null** of the rank-sum by shuffling group labels, and read a two-sided
+  *p*-value from it.
+- State the **location-shift** interpretation — and the caveat that when the two shapes differ, the
+  rank-sum tests **stochastic dominance**, *not* a difference in means.
 
-## Core vocabulary
+## Where we are {#concept_development}
 
-- **Pooled ranking** — combine both groups into one list of $N = n_T + n_C$ values and assign each the
-  rank $R_i$ of its position in the sorted pool, $1$ for the smallest up to $N$ for the largest.
-- **Mid-ranks (ties)** — when several observations are equal, give each the *average* of the ranks they
-  would occupy; e.g. two values tied for positions $4$ and $5$ each get the mid-rank $4.5$.
-- **Wilcoxon rank-sum statistic ($W$)** — the **sum of the ranks** belonging to one chosen group (here
-  the Express group), $W = \sum_{i \in \text{Express}} R_i$.
-- **Mann–Whitney $U$** — the count of (Express, Standard) pairs in which the Express value is the
-  smaller; $U$ and $W$ are linked by a fixed arithmetic shift, so they are the **same test** in two
-  costumes.
-- **Probabilistic index / probability of superiority ($\hat P(X<Y)$)** — the estimated probability that
-  a randomly chosen Express wait is shorter than a randomly chosen Standard wait, $\hat P = U / (n_T n_C)$.
-- **Stochastic shift (location shift)** — the alternative the rank-sum is built to detect: one group's
-  whole distribution is pushed toward lower (or higher) values than the other's.
-- **Exchangeability (under the null)** — the assumption that, if the two groups truly have the same
-  distribution, the group labels are arbitrary tags that could be reshuffled with no effect.
+Two care plans, two independent groups of recovery times (days): **standard care** ($n_1 = 10$) and
+a **new protocol** ($n_2 = 12$). The samples are small and right-skewed, with a long recovery in
+each group — exactly the setting where a mean-and-*t* comparison is fragile and a rank method earns
+its keep. A rank test throws away the raw distances and keeps only the **ordering**, which is why one
+stray long recovery cannot drag the conclusion around.
 
-## Concept development
+The whole test starts with one move: **pool all $n_1 + n_2 = 22$ values and rank them together**,
+from 1 (fastest recovery) to 22 (slowest), averaging any ties. The **rank-sum** of the standard-care
+group — just add up the ranks its ten patients received — is the test statistic.
 
-### Pool, rank, and use mid-ranks for ties
+::: {#fig-w08-pool-rank}
+![A rank axis from 1 to 22. Standard-care observations (filled circles, top row) sit almost entirely at ranks 10 and above; new-protocol observations (open squares, bottom row) fill the low ranks 1 through 9 with three exceptions at ranks 17, 18, and 22. A box reads: rank-sum of standard care W = 151 of 253 total ranks.](../figures/week-08/w08_pool_rank.png){fig-alt="A rank axis from 1 to 22. Standard-care observations (filled circles, top row) sit almost entirely at ranks 10 and above; new-protocol observations (open squares, bottom row) fill the low ranks 1 through 9 with three exceptions at ranks 17, 18, and 22. A box reads: rank-sum of standard care W = 151 of 253 total ranks."}
 
-The rank-sum throws away the raw values and keeps only their ordering. You take the $n_T = 25$ Express
-waits and the $n_C = 25$ Standard waits, **pour them into one pool of $N = 50$**, sort that pool from
-smallest to largest, and give every observation its **rank** — $1$ to the shortest wait, $50$ to the
-longest. Then you look at which group the small ranks landed in. If Express waits are genuinely shorter,
-the Express observations should collect a disproportionate share of the *low* ranks, and the Standard
-observations should hold the *high* ones.
+Pool both groups and rank all 22 recovery times. The standard-care ranks pile up at the high end;
+their rank-sum is $W = 151$ out of $253$ total ranks.
+:::
 
-The single most important consequence of ranking is what it does to the long Standard waits near $64$ and
-$88$ minutes. To the $t$-test those are huge numbers that inflate the variance and shove the Standard mean
-upward. To the rank-sum they are simply **rank $49$ and rank $50$** — the two largest positions, nothing
-more. Replacing $88$ with $880$ would not move the rank-sum at all, because $880$ is still just "the
-largest." That is the precise sense in which ranks are **resistant**: an extreme value can occupy at most
-the top rank, so it can contribute only a bounded amount, no matter how extreme it is.
+::: {.notice}
+**What to notice.** Notice the standard-care circles cluster at the **high ranks** (slow recoveries) while the
+new-protocol squares hold the **low ranks** (fast recoveries). If the two plans were interchangeable,
+each group would collect a fair share of high and low ranks; instead standard care collected $W = 151$
+of the $253$ total ranks. The question the test answers is whether $151$ is *surprisingly* high.
+:::
 
-Ties need a rule. When two or more pooled values are equal, you do not break the tie arbitrarily; you give
-each tied observation the **mid-rank**, the average of the rank positions they jointly occupy. If three
-waits all equal $14$ minutes and would occupy positions $12$, $13$, $14$ in the sorted pool, each gets the
-mid-rank $(12 + 13 + 14)/3 = 13$. Mid-ranks keep the total of all ranks fixed at $1 + 2 + \dots + N =
-N(N+1)/2$, which is what makes the test's bookkeeping balance. Wait times recorded to the nearest minute
-will have ties, so mid-ranks are not a footnote here — they are part of the procedure.
+**The two groups, as numbers (nonvisual equivalent).**
 
-The assumption-ladder move so far: you **assume** only that, under the null, the two groups are
-exchangeable (same distribution, so labels are arbitrary); you **rank** the pooled data; this **protects
-against** a heavy upper tail that would wreck a mean-based test; and it **cannot prove** anything about
-the actual minutes — by design you have discarded them.
+| Group | $n$ | median (days) | rank-sum $W$ | Mann–Whitney $U$ |
+|---|---|---|---|---|
+| Standard care (A) | 10 | 9.8 | 151 | 96 |
+| New protocol (B) | 12 | 6.0 | 102 | 24 |
+| Pooled total | 22 | — | 253 | 120 |
 
-### From the rank-sum $W$ to Mann–Whitney $U$ — one test, two faces
+## The rank-sum test, step by step
 
-Once every pooled wait has a rank, the **Wilcoxon rank-sum statistic** is just the sum of the ranks that
-fell to one group. Choose the Express group:
+The rank-sum $W$ is only half the picture; we need a **reference distribution** to judge it against.
+Under the null hypothesis that the two plans are exchangeable — a patient's recovery would have been
+the same under either label — the group labels carry no information. So we can **shuffle the labels**
+across the fixed set of ranks, recompute the rank-sum each time, and see how far out $W = 151$ falls.
 
-$$
-W = \sum_{i \in \text{Express}} R_i .
-$$
+::: {#fig-w08-rank-procedure}
+![A five-box vertical flow diagram. Box 1: pool both groups into one set of 22 values. Box 2: rank all 22 values 1 to 22, averaging ties. Box 3: add up one group's ranks to get W for standard care. Box 4: shuffle the group labels many times to build a null distribution of W. Box 5: the p-value is the share of shuffles whose W is at least as far from the center as the observed W. A footnote reads observed W = 151, p = 0.016.](../figures/week-08/w08_rank_procedure.png){fig-alt="A five-box vertical flow diagram. Box 1: pool both groups into one set of 22 values. Box 2: rank all 22 values 1 to 22, averaging ties. Box 3: add up one group's ranks to get W for standard care. Box 4: shuffle the group labels many times to build a null distribution of W. Box 5: the p-value is the share of shuffles whose W is at least as far from the center as the observed W. A footnote reads observed W = 151, p = 0.016."}
 
-If Express waits are short, they hold the low ranks and $W$ is *small*; if the two groups were identical,
-$W$ would sit near its null average. Under the null, the Express ranks are a random subset of size $n_T$
-drawn from $\{1, 2, \dots, N\}$, so the expected rank-sum is
+The Wilcoxon rank-sum / Mann–Whitney procedure: pool, rank, sum one group's ranks, then judge that
+sum against a null built by shuffling the labels.
+:::
 
-$$
-E[W] = \frac{n_T (N + 1)}{2} = \frac{25 \cdot 51}{2} = 637.5 .
-$$
+::: {.notice}
+**What to notice.** Every step is distribution-free: nothing here assumes normal data. The only quantities that move are
+the **labels**; the pooled ranks stay fixed, so — **when there are no ties** — the null distribution
+of $W$ depends only on the sample sizes, not on the shape of the data. Ties leave a faint mark (the
+two $9.4$-day recoveries share the average rank $12.5$, so the rank multiset carries a small
+correction the exact permutation already folds in), but the appeal of a rank method stands: the
+data's shape barely touches the null.
+:::
 
-The observed Express rank-sum lands **well below** $637.5$, because the Express waits gathered the low
-ranks — that "below average" position is the whole signal.
+**The procedure, as steps (nonvisual equivalent).**
 
-The **Mann–Whitney $U$** tells the same story by counting comparisons instead of summing ranks. For every
-one of the $n_T n_C = 25 \times 25 = 625$ possible (Express, Standard) pairs, ask: is the Express wait the
-shorter of the two? $U$ is the number of pairs for which the answer is yes (ties count as half). The two
-statistics are connected by a fixed formula,
+| Step | What you do | Result here |
+|---|---|---|
+| 1 | Pool the 22 values | one combined sample |
+| 2 | Rank 1–22, averaging ties | ranks fixed |
+| 3 | Sum the standard-care ranks | $W = 151$ |
+| 4 | Shuffle labels many times | null of $W$ |
+| 5 | Compare $W$ to the null | two-sided $p = 0.016$ |
 
-$$
-U = W - \frac{n_T(n_T + 1)}{2},
-$$
-
-so reporting $W$ or reporting $U$ is reporting the *same test* — there is no second method hiding here.
-The $U$ form is the more useful one for interpretation, because dividing it by the number of pairs turns
-it directly into a probability, which is the next subsection.
-
-The assumption-ladder move: you **assume** exchangeability under the null; you **rank** (and equivalently
-count pairwise comparisons); this **protects against** the tail; it **cannot prove** that the groups
-differ in mean — $W$ and $U$ are statements about *ordering*, not about *averages*.
-
-### The honest effect size: a probability, not a mean difference
-
-Here is the payoff and the trap. Divide $U$ by the number of pairs and you get the **probabilistic index**,
-the probability of superiority:
-
-$$
-\hat P(\text{Express} < \text{Standard}) = \frac{U}{n_T \, n_C} .
-$$
-
-For Dataset W this works out to $\hat P(\text{Express} < \text{Standard}) \approx 0.72$. Read that
-sentence literally: **if you pick one Express wait and one Standard wait at random, the Express wait is the
-shorter one about $72\%$ of the time.** A value of $0.5$ would mean the two are interchangeable — a coin
-flip which is shorter — and $0.72$ is a meaningful tilt toward Express being faster. This is the rank-sum's
-*natural* effect size: it is exactly what the test statistic estimates, it lives on a $0$-to-$1$
-probability scale everyone can read, and it never once mentions the word "mean."
-
-The accompanying tail probability for Dataset W is $p \approx 0.01$. Read it the way you read every
-permutation-style $p$-value in this course: **if the two workflows produced identically-distributed waits,
-a rank separation at least this strong would arise about $1\%$ of the time** by the luck of which waits
-landed in which arm. (You can build that null distribution by exactly the Week 3 machinery — shuffle the
-$50$ group labels, recompute the rank-sum each time — which is why the rank-sum is a permutation test on
-ranks, not a formula you must take on faith.) The small $p$ says the shift is unlikely to be label-luck;
-the $\hat P \approx 0.72$ says *how big* the shift is, on a scale that means something.
-
-Now the discipline. The right summary sentence is **"an Express wait is usually shorter than a Standard
-wait — about $72\%$ of head-to-head comparisons favor Express ($p \approx 0.01$)."** The *wrong* summary is
-"Express waits are $X$ minutes shorter on average," because the rank-sum never estimated a mean difference
-and is in fact specifically engineered to ignore the magnitudes that a mean would use. The
-assumption-ladder move: you **assume** exchangeability under the null, and — to upgrade $\hat P$ into a
-clean *location*-shift story — that the two groups have *similar shapes*; you **rank**; this **protects
-against** the inflated mean and standard error caused by the long Standard waits; and it **cannot prove** a
-difference in means, nor any causal mechanism, nor (without the equal-shape assumption) that the difference
-is purely a location shift rather than, say, a difference in spread.
-
-## Worked examples
-
-### Worked example — Express vs Standard service waits (recurring slice, Dataset W)
-
-**What is assumed.** Dataset W holds $n_T = 25$ Express waits and $n_C = 25$ Standard waits, in minutes,
-right-skewed, with two long Standard waits near $64$ and $88$. Data are synthetic; seed set. For the
-$p$-value we assume the two groups are **exchangeable under the null** (identical distributions ⇒ the
-group labels are arbitrary). To read $\hat P \approx 0.72$ specifically as a *location shift* we assume the
-two distributions have roughly the **same shape**, differing mainly by a horizontal slide. We do **not**
-assume normality, and we do **not** assume equal variances in the $t$-test sense.
-
-**Computation.** Pool the $50$ waits, rank them (mid-ranks for ties), sum the Express ranks to get $W$,
-convert to $U$, and divide by $n_T n_C = 625$ to get the probability of superiority. The static R below is
-shown as teaching code and is **not executed** here.
+The R you would run is short, and — as always — it contains **no plotting**; the picture is
+downstream:
 
 ```r
-set.seed(45203)
+# two independent groups of recovery times (days)
+standard <- c(7.5, 9.2, 9.4, 9.4, 9.7, 9.8, 10.2, 11.5, 14.5, 17.0)   # n = 10
+newprot  <- c(2.0, 3.3, 4.9, 5.6, 5.7, 5.9, 6.0, 6.7, 7.0, 10.4, 11.4, 20.0)  # n = 12
 
-# Synthetic Dataset W: 25 Express + 25 Standard service waits (minutes), right-skewed.
-# Drawn here only so the static slice is concrete; the locked summaries below are authoritative.
-express  <- round(rlnorm(25, meanlog = 2.4, sdlog = 0.5))          # n_T = 25, shorter, less skewed
-standard <- round(c(rlnorm(23, meanlog = 2.8, sdlog = 0.5), 64, 88))  # n_C = 25, two long tails
+# pool, rank (average ties), and sum the standard-care ranks
+r <- rank(c(standard, newprot))
+W <- sum(head(r, length(standard)))         # rank-sum of standard care = 151
 
-pool   <- c(express, standard)                 # N = 50 pooled waits
-labels <- c(rep("Express", 25), rep("Standard", 25))
-ranks  <- rank(pool, ties.method = "average")  # pooled ranks, MID-RANKS for ties
+# Mann-Whitney U (R's wilcox.test reports U, labelled "W" in its output)
+U <- W - length(standard) * (length(standard) + 1) / 2   # 96
+wilcox.test(standard, newprot)              # two-sample rank-sum / Mann-Whitney
 
-W <- sum(ranks[labels == "Express"])           # Wilcoxon rank-sum (Express ranks)
-# E[W] under the null = n_T (N + 1) / 2 = 25 * 51 / 2 = 637.5 ; observed W sits well below this
-
-U <- W - 25 * (25 + 1) / 2                      # Mann-Whitney U  =  W - n_T(n_T+1)/2
-P_sup <- U / (25 * 25)                          # probability of superiority = U / (n_T n_C)
-# P_sup = P(Express wait < Standard wait)  ~= 0.72   (an Express wait is usually shorter)
-
-# wilcox.test() reports the SAME statistic and tail probability:
-# wilcox.test(express, standard)$p.value   ~= 0.01   (two-sided)
-
-# ---- key numbers (synthetic; verified: false) ----
-# E[W] (null mean) = 637.5      observed W well below 637.5
-# P(Express < Standard) ~= 0.72      p ~= 0.01
+# a permutation null of the rank-sum: shuffle the labels across the fixed ranks
+set.seed(45208)
+B      <- 50000
+centre <- mean(r) * length(standard)        # null mean of W = 115
+Wnull  <- replicate(B, sum(sample(r, length(standard))))
+mean(abs(Wnull - centre) >= abs(W - centre))   # two-sided permutation p-value
 ```
 
-**Interpretation.** The probability of superiority is $\hat P(\text{Express} < \text{Standard}) \approx
-0.72$: pick one Express wait and one Standard wait at random and the Express wait is shorter about $72\%$
-of the time — a clear tilt toward Express being faster, well away from the $0.5$ coin-flip of "no
-difference." The tail probability $p \approx 0.01$ says a rank separation this strong would arise only
-about once in a hundred reshuffles if the two workflows were really interchangeable, so the shift is
-unlikely to be an accident of which waits landed where. The claim the method supports is *"Express waits
-run stochastically shorter than Standard waits — they win about $72\%$ of head-to-head comparisons."* The
-claim it does **not** support is "Express is $7$ minutes faster on average": that is a mean difference, and
-the rank-sum deliberately ignored the minute-values (including the two long Standard waits, now merely
-ranks $49$ and $50$) that a mean would have used. Assumption-ladder, stated plainly: **assumed** —
-exchangeability under the null, plus similar shapes for the location-shift reading; **ranked** — the pooled
-$50$ waits; **protects against** — the long upper tail that inflates the mean and the $t$ standard error;
-**cannot prove** — a clean difference in means, a difference in spread masquerading as a shift, or any
-cause.
+## Worked example — a rank-sum test of recovery times {#worked_example}
 
-### Worked example — two small groups of pain scores (transfer, new context)
+Run the shuffle 50,000 times and the null distribution of $W$ takes shape. Its center is
+$\mu_W = n_1(N+1)/2 = 10 \times 23 / 2 = 115$; the observed rank-sum sits well out in the upper tail.
 
-**What is assumed.** A physical-therapy clinic compares an active-stretching protocol against a
-heat-only protocol on next-day soreness, scored $0$–$10$ (integers, so ties are guaranteed). Group A
-(stretching) has $n_A = 6$ scores, Group B (heat) has $n_B = 6$; $N = 12$. These numbers are illustrative
-and distinct from Dataset W. We assume only exchangeability under the null; with scores this small and
-this tied, ranks are the *natural* scale, and a $t$-test on $0$–$10$ integers with $n = 6$ would be hard to
-justify. Synthetic; seed set.
+::: {#fig-w08-ranksum-null}
+![A histogram of the permutation null distribution of the rank-sum W, roughly bell-shaped and centered at 115. A dotted line marks the null center 115; a solid line marks the observed W = 151 far to the right. The two tails beyond 36 units from the center are hatched, labeled two-sided p = 0.016.](../figures/week-08/w08_ranksum_null.png){fig-alt="A histogram of the permutation null distribution of the rank-sum W, roughly bell-shaped and centered at 115. A dotted line marks the null center 115; a solid line marks the observed W = 151 far to the right. The two tails beyond 36 units from the center are hatched, labeled two-sided p = 0.016."}
 
-**Computation.** Pool the $12$ scores, rank with mid-ranks, sum Group A's ranks for $W_A$, convert to $U$,
-and divide by $n_A n_B = 36$.
+Permutation null of the rank-sum from 50,000 label shuffles, centered at $115$. The observed
+$W = 151$ lies $36$ ranks out; the shaded two tails give a two-sided $p = 0.016$.
+:::
 
-```r
-set.seed(45203)
+::: {.notice}
+**What to notice.** The observed rank-sum is $36$ ranks above the null center — about $2.4$ null standard deviations
+($36 / 15.13$). Only about $1.6\%$ of label shuffles land a rank-sum that far from the center in
+either direction, so the two-sided permutation *p*-value is $0.016$. (We use the
+$(1 + \text{count})/(1 + B)$ convention, which never reports a *p* of exactly zero.) The evidence
+says the two plans are **not** interchangeable: standard-care recoveries run systematically slower.
+:::
 
-A <- c(2, 3, 3, 4, 5, 5)   # stretching, lower soreness  (n_A = 6)
-B <- c(4, 5, 6, 6, 7, 8)   # heat only,  higher soreness  (n_B = 6)
+**Rank-sum read-out (nonvisual equivalent).**
 
-pool   <- c(A, B)
-labels <- c(rep("A", 6), rep("B", 6))
-ranks  <- rank(pool, ties.method = "average")   # MID-RANKS for the many ties
+| Quantity | Value |
+|---|---|
+| Observed rank-sum $W$ (standard care) | 151 |
+| Null center $\mu_W = n_1(N+1)/2$ | 115 |
+| Null SD of $W$ | 15.13 |
+| Mann–Whitney $U = W - n_1(n_1{+}1)/2$ | 96 |
+| $U/(n_1 n_2)$ = estimate of $P(A > B)$ | 0.80 |
+| Two-sided permutation *p* (B = 50,000) | 0.016 |
 
-W_A <- sum(ranks[labels == "A"])    # rank-sum for Group A (illustrative)
-U_A <- W_A - 6 * (6 + 1) / 2        # Mann-Whitney U for A  =  W_A - n_A(n_A+1)/2
-P_A_lower <- U_A / (6 * 6)          # P(A score < B score) = U_A / (n_A n_B), illustrative
-# read: a randomly chosen stretching score is usually LOWER (less sore) than a heat score
-```
+The Mann–Whitney $U = 96$ carries a plain-language reading. Of the $n_1 n_2 = 120$ possible
+patient-to-patient matchups (one standard, one new), the standard-care patient recovered slower in
+$96$ of them — so $U/(n_1 n_2) = 0.80$ estimates $P(\text{standard} > \text{new})$. Rank-sum and $U$
+are the **same test**: $U$ is just $W$ with the group's minimum possible rank-sum, $n_1(n_1{+}1)/2 = 55$,
+subtracted off.
 
-**Interpretation.** The structure is identical to the wait-time example, only the context and the numbers
-change: pool, rank with mid-ranks, sum, convert to $U$, divide by the number of pairs to get a probability
-of superiority you can state in one plain sentence — *"a stretching patient is usually less sore than a
-heat patient in a head-to-head comparison."* With only six scores per group and lots of ties, this is
-exactly where a rank method earns its keep over a $t$-test: the ordinal-ish, tied, small-sample shape is
-hostile to means but friendly to ranks. The assumption-ladder move is the same — **assumed**
-exchangeability under the null; **ranked** the pooled $12$ scores (mid-ranks for ties); **protects
-against** the unreliability of a mean on a tied $0$–$10$ scale with tiny groups; **cannot prove** a mean
-difference or a cause. As before, the right effect summary is a probability, not "$X$ points lower on
-average."
+## What a significant rank-sum does (and does not) say
+
+A small *p* tells you the groups differ, but **differ how?** The cleanest interpretation holds when
+the two distributions have the **same shape** and differ only by a horizontal **shift** — the
+*location-shift model*. Under that model the rank-sum tests whether the shift is zero, and the shift
+has a natural estimate: the **Hodges–Lehmann** estimator, the median of all $n_1 n_2$ pairwise
+differences, which here is $3.8$ days.
+
+::: {#fig-w08-location-shift}
+![Two right-skewed density curves of identical shape. A solid teal curve (new protocol) peaks near 6 days; a dashed ochre curve (standard care) is the same curve slid 3 days to the right. Dotted vertical lines mark the two medians, and a double-headed arrow between them is labeled shift = 3 days — the population model shift; the sample estimate given in the caption is 3.8 days.](../figures/week-08/w08_location_shift.png){fig-alt="Two right-skewed density curves of identical shape. A solid teal curve (new protocol) peaks near 6 days; a dashed ochre curve (standard care) is the same curve slid 3 days to the right. Dotted vertical lines mark the two medians, and a double-headed arrow between them is labeled shift = 3 days — the population model shift; the sample estimate given in the caption is 3.8 days."}
+
+The location-shift model: two distributions of **identical shape**, one slid to the right by a fixed
+amount. The picture shows the population *model* — a clean **3-day** shift between the two curves; on
+our sample, the rank-sum's estimated shift (the difference in medians, and the Hodges–Lehmann
+estimator) is $3.8$ days.
+:::
+
+::: {.notice}
+**What to notice.** The curves are drawn from the population *model* — a clean $3$-day shift between two identical
+shapes — and the sample lands right beside it. When the shapes match, "standard care runs about
+$3.8$ days slower" is a fair, compact summary, and the difference in sample medians
+($9.8 - 6.0 = 3.8$ days) agrees with the Hodges–Lehmann estimate. The rank test earns this reading
+*because* the only difference between the curves is where they sit, not how they are shaped.
+:::
+
+**Shift read-out (nonvisual equivalent).**
+
+| Quantity | Value |
+|---|---|
+| Median, new protocol | 6.0 days |
+| Median, standard care | 9.8 days |
+| Difference in sample medians | 3.8 days |
+| Hodges–Lehmann shift estimate | 3.8 days |
+| $P(\text{standard} > \text{new})$ estimate | 0.80 |
 
 ## A common mistake
 
-The signature error this week is **reading a rank-sum result as a difference in means** — reporting $\bar
-x_T - \bar x_C$ when the test estimated $P(X < Y)$ (Risk 6, Risk 7). It usually sounds like one of these:
+::: {.misconception}
+**"A significant rank-sum means the *means* differ, so it's just a robust *t*-test."** It is not. The
+rank-sum compares whole distributions through $P(A > B)$ — the tendency of one group to outrank the
+other — **not** $\mu_A - \mu_B$. Reading the result as a clean difference in centers is only safe
+under the **location-shift** model, where the two shapes are the same. When the shapes differ, a
+significant rank-sum signals **stochastic dominance** (one group tends to produce larger values), and
+"difference in means" can be flatly wrong — even zero.
+:::
 
-> "The rank-sum was significant, so Express waits are about $7$ minutes faster on average."
+## When the two shapes differ
 
-> "$p = 0.01$, so the mean Express wait is lower than the mean Standard wait."
+Here is the caveat made concrete. Two groups can share the **exact same mean** yet be so differently
+shaped that the rank-sum still leans hard toward one of them.
 
-Both sentences attach the rank-sum's $p$-value to a **mean difference the test never computed**. The
-rank-sum/Mann–Whitney works on ranks; it has, by construction, **discarded the raw minute-values** — that
-discarding is precisely why it is resistant to the two long Standard waits. Having thrown those magnitudes
-away, it cannot then hand you back a statement measured in minutes. The number it *does* estimate is the
-probability of superiority, $\hat P(\text{Express} < \text{Standard}) \approx 0.72$, and the honest report
-is a **shift**: "an Express wait is usually shorter than a Standard wait — Express wins about $72\%$ of
-head-to-head comparisons, $p \approx 0.01$." If you specifically need a number in minutes, that is a
-*different* estimand and you must use a method built for it (a difference in medians with a bootstrap
-interval, as in Weeks 5–6 — for Dataset W that interval was about $(-10, -2)$ minutes), and you should say
-plainly which estimand you are reporting.
+::: {#fig-w08-shape-differs}
+![Two density curves with the same mean of 10, marked by a dotted vertical line at 10. A solid teal curve (group X) is symmetric with median 10. A dashed ochre curve (group Y) is strongly right-skewed with its bulk below 10 (median 8.3) and a long upper tail. An annotation reads: equal means, unequal shapes; the rank-sum reflects P(Y > X) = 0.40, not the difference in means (which is 0).](../figures/week-08/w08_shape_differs.png){fig-alt="Two density curves with the same mean of 10, marked by a dotted vertical line at 10. A solid teal curve (group X) is symmetric with median 10. A dashed ochre curve (group Y) is strongly right-skewed with its bulk below 10 (median 8.3) and a long upper tail. An annotation reads: equal means, unequal shapes; the rank-sum reflects P(Y > X) = 0.40, not the difference in means (which is 0)."}
 
-Two smaller traps travel with this one. First, **forgetting mid-ranks for ties**: wait times to the
-nearest minute will tie, and breaking ties arbitrarily (instead of averaging) quietly distorts $W$ and the
-$p$-value. Second, **promoting the probabilistic index into a pure "location shift" without checking
-shapes**: $\hat P \approx 0.72$ is always a valid statement about *ordering*, but calling it specifically a
-location shift assumes the two distributions have similar shapes; if Express and Standard differ mainly in
-*spread* rather than in location, the rank-sum can still flag a difference, and "shift" would then be the
-wrong word for it. Name what you are claiming — a probability of superiority always; a location shift only
-when the shapes support it.
+Two groups with the **same mean** ($10$ days) but different shapes: symmetric (median $10$) versus
+right-skewed (median $8.3$). The rank-sum sees $P(Y > X) = 0.40$, not the zero difference in means.
+:::
 
-## Low-stakes self-checks (ungraded)
+::: {.notice}
+**What to notice.** Both groups average $10$ days, so a *t*-test targets a difference of **zero**. But the skewed group
+$Y$ spends most of its mass **below** $10$ (its median is $8.3$), pulled up to a mean of $10$ only by
+a long upper tail. A randomly chosen $Y$ beats a randomly chosen $X$ only $40\%$ of the time, so the
+rank-sum leans toward $X$. The two tests are answering **different questions** — the rank-sum is a
+test about $P(Y > X)$, not about the means.
+:::
 
-These are for your own practice — ungraded, no submission.
+**Shape-difference read-out (nonvisual equivalent).**
 
-1. In one sentence, state what $\hat P(\text{Express} < \text{Standard}) \approx 0.72$ means, using the
-   words "randomly chosen" and "shorter." Then say what value of $\hat P$ would correspond to "no
-   difference."
-2. A classmate writes: "The rank-sum gives $p \approx 0.01$, so Express waits are about $7$ minutes
-   faster on average." Identify exactly what is wrong, and rewrite the conclusion as an honest shift
-   statement.
-3. The two long Standard waits are near $64$ and $88$ minutes. What ranks do they occupy in the pooled
-   list of $50$? If the $88$ had instead been $880$, how would $W$, $U$, and $\hat P$ change — and why
-   does that answer explain the word "resistant"?
-4. Three pooled waits all equal $14$ minutes and would occupy positions $20$, $21$, $22$ in the sorted
-   list. What mid-rank does each receive, and why does averaging keep the total of all ranks unchanged?
-5. Using the locked link $U = W - n_T(n_T + 1)/2$ and the null mean $E[W] = n_T(N+1)/2 = 637.5$, explain
-   in words why an observed Express rank-sum *below* $637.5$ corresponds to a probability of superiority
-   *above* $0.5$.
+| Distribution | Mean | Median | $P(Y > X)$ |
+|---|---|---|---|
+| Group X (symmetric) | 10.0 | 10.0 | — |
+| Group Y (right-skewed) | 10.0 | 8.3 | — |
+| Comparison | equal | differ | 0.40 |
 
-## Reading and source pointer
+## Check your understanding (ungraded)
 
-This week is grounded in the instructor notes (the primary course materials) for the pool-and-rank
-procedure and the shift interpretation, with **ModernDive** (Ismay, Kim & Valdivia) on **comparing two
-groups** for the rank-based two-sample workflow and the reproducible posture used in the labs. The
-classical rank-sum / Mann–Whitney vocabulary is calibrated against **Hollander, Wolfe & Chicken,
-*Nonparametric Statistical Methods*** — named and cited **only** as an optional advanced reference, with no
-prose, tables, examples, exercises, solutions, or notation reproduced. *These notes are the course's own
-synthesis, grounded in but not copied from the sources.*
+1. In your own words, why does pooling and ranking make the rank-sum's null distribution depend only
+   on $n_1$ and $n_2$ — *when there are no ties* — rather than on the shape of the data? What does a
+   tie (like the two $9.4$-day recoveries) change?
+2. The observed rank-sum was $W = 151$ with a null center of $115$. Explain what the permutation null
+   is a distribution *of*, and why a rank-sum far from $115$ counts as evidence.
+3. The Mann–Whitney $U = 96$ gave $U/(n_1 n_2) = 0.80$. State in a sentence what real-world quantity
+   $0.80$ estimates.
+4. Two groups have identical means but a significant rank-sum. Is that a contradiction? Explain what
+   the rank-sum is actually detecting, and when "difference in means" would have been a safe reading.
 
-## Evidence and verification status
+## Reading guide
 
-**verified: false.** The method logic on this page is course-authored, but every numeric value here is
-**drafted, synthetic, and not independently checked.** The load-bearing numbers are: the probability of
-superiority $\hat P(\text{Express} < \text{Standard}) \approx 0.72$ and the tail probability $p \approx
-0.01$ for Dataset W; the null rank-sum mean $E[W] = n_T(N+1)/2 = 637.5$; the arithmetic links $U = W -
-n_T(n_T+1)/2$ and $\hat P = U/(n_T n_C)$ with $n_T = n_C = 25$, $N = 50$, $n_T n_C = 625$; and the
-illustrative pain-score transfer values. All example data are synthetic with `set.seed(45203)`. These worked numbers are **provisional and not independently verified** — treat them as targets to reproduce, not as confirmed reference values.
+- **IMS — *comparing two independent groups*** — a conceptual companion to two-group comparison; read
+  it for the framing, then map it onto the rank-based null above.
+- **Learning Statistics with R (Navarro) — *nonparametric alternatives to the two-sample t-test*** —
+  an instructor reference on where the Mann–Whitney fits beside the *t*-test (cited, not reproduced).
+- **NIST/SEMATECH e-Handbook — *two-sample rank-based location tests*** — reinforces the location-shift
+  interpretation and its assumptions.
 
-## Public vs. graded
+## Accessibility notes
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
-prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded method checkpoints,
-weekly quizzes, homework and method reports, resampling and robustness labs, the midterm, the applied
-robust-methods project, and the final exam live in **Blackboard (the LMS)**, which is authoritative for due
-dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+Mathematics is live text ($W = n_1(N{+}1)/2$ renders as MathML, not an image). Every figure carries an
+alt line stating its message, a "what to notice" reading, and an adjacent data-summary table, so each
+point survives without the picture. Groups are distinguished by **marker and linestyle** (standard
+care = filled circle / solid; new protocol = open square / dashed) and by labels, never by color
+alone. A clean lint and a clean render are evidence; the rendered assistive-technology review is a
+human step.
+
+## Assessment (descriptive only)
+
+This week contributes learning evidence toward *running a two-sample rank test and reading its
+permutation null* and *stating the location-shift interpretation and its limits*. That is the
+**shape** only; the actual graded prompts, values, and due dates live in Blackboard.
+
+::: {.boundary-note}
+**Public vs. graded.** These are public, ungraded notes and practice. Graded prompts, keys, rubrics,
+point values, and due dates live in **Blackboard Ultra**, which governs.
+:::
 
 ## Looking ahead
 
-Next week we keep the same pool-and-rank idea but apply it where the outcome is **ordinal** rather than
-continuous: program-satisfaction ratings on a $1$–$5$ Likert scale (Dataset L). The Mann–Whitney on the
-ordinal scores again returns a probability of superiority (about $0.66$ there, $p \approx 0.01$), and we
-contrast it with a plain $\chi^2$ test of independence that *throws away the ordering* — the same lesson in
-a new costume: respect the scale, use the ranks, and report a shift, not an average of ordinal labels.
-
-## See also
-
-- [Week 7 — Rank-based one-sample and paired methods](week-07-rank-based-one-sample-and-paired-methods.qmd)
-  — the sign test and signed-rank, the one-sample siblings of this week's two-sample rank-sum.
-- [Week 9 — Categorical and ordinal outcomes](week-09-categorical-and-ordinal-outcomes.qmd) — the
-  Mann–Whitney on ordinal scores, and ordinal vs nominal tests.
-- [Week 3 — Permutation logic](week-03-permutation-logic.qmd) — the shuffle-the-labels machinery that
-  also generates the rank-sum's null distribution.
-- [Methods glossary](../resources/methods-glossary.qmd) — rank-sum, Mann–Whitney $U$, probability of
-  superiority, mid-ranks.
-- [Method chooser](../resources/method-chooser.qmd) — the assumption-light decision guide: when a rank
-  method is the right two-sample tool.
-- [Resampling guide](../resources/resampling-guide.qmd) — permutation vs bootstrap side by side.
+Next week we move from ranks to **counts**: categorical and ordinal outcomes across two groups, where
+an exact (permutation) null again beats a shaky large-sample approximation when the table is small —
+and where treating ordered categories as interval numbers is its own tempting mistake.
