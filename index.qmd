@@ -64,7 +64,5 @@ something concrete to verify *against*.
 
 ::: {.boundary-note}
 This is the **public** course site: notes, labs-as-material, and resources. Graded prompts, rubrics,
-point values, answer keys, and due dates live in **Blackboard Ultra**, which governs. This site is a
-draft build for review; it certifies no correctness, accessibility conformance, or release readiness —
-those are human-reserved sign-offs.
+point values, answer keys, and due dates live in **Blackboard Ultra**, which governs.
 :::
