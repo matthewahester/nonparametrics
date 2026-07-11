@@ -1,7 +1,7 @@
 ---
 title: "Resampling, Nonparametric, and Robust Methods"
-subtitle: "STAT 45203 · Section 01 · Fall 2026 · UA Little Rock"
-pagetitle: "STAT 45203 — Resampling, Nonparametric & Robust Methods"
+subtitle: "Fall 2026 · UA Little Rock"
+pagetitle: "Resampling, Nonparametric & Robust Methods"
 page-layout: full
 toc: false
 ---
